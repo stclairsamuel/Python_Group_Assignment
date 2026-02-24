@@ -50,6 +50,12 @@ running = True
 yInput = 0
 xInput = 0
 
+getInput = True
+
+isDashing = False
+dashTime = 0.2
+dashTimer = 0
+
 
 
 while running:
@@ -62,14 +68,26 @@ while running:
     yInput = 0
     xInput = 0
 
-    if (inpList[pygame.K_w]):
-        yInput += 1
-    if (inpList[pygame.K_s]):
-        yInput -= 1
-    if (inpList[pygame.K_a]):
-        xInput -= +1
-    if (inpList[pygame.K_d]):
-        xInput += 1
+    if (isDashing):
+        getInput = False
+    else:
+        getInput = True
+
+    if (getInput):
+        if (inpList[pygame.K_w]):
+            yInput += 1
+        if (inpList[pygame.K_s]):
+            yInput -= 1
+        if (inpList[pygame.K_a]):
+            xInput -= 1
+        if (inpList[pygame.K_d]):
+            xInput += 1
+    
+        if (inpList[pygame.K_LSHIFT]):
+            isDashing = True
+
+    if (isDashing and dashTimer == 0):
+        isDashing = False
 
         
     mag = math.sqrt(xInput * xInput + yInput * yInput)
@@ -77,9 +95,9 @@ while running:
     if mag > 0:
         dirVector = [xInput / mag, yInput / mag]
     
-    #if ():
-     #   xVel += dirVector[0] * dashSpeed
-      #  yVel += dirVector[1] * dashSpeed
+    if (isDashing):
+        xVel += dirVector[0] * dashSpeed
+        yVel += dirVector[1] * dashSpeed
 
     dt = clock.tick() / 1000.0
 
@@ -110,6 +128,13 @@ while running:
 
     # Update the display
     pygame.display.update()
+
+    # Timers
+
+    if (dashTimer > 0):
+        dashTimer -= dt
+    else:
+        dashTimer = 0
 
 
 # Quit Pygame
