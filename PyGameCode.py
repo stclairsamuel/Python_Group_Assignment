@@ -2,6 +2,8 @@ import pygame
 import sys
 import math
 import numpy as np
+import random
+import os
 
 pygame.init()
 
@@ -13,7 +15,7 @@ keycodes = {
 }
 
 acceleration = 4000
-maxSpeed = 800
+maxSpeed = 400
 speed = maxSpeed
 dashSpeed = 800
 xVel = 0
@@ -27,25 +29,30 @@ WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 COLOR = (200, 230, 83)
 
+
+
 # Set up the display
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Pygame Text Display")
 
-# Create a font object
-font = pygame.font.SysFont("Times New Roman", 50) # Use the default system font with size 50
+imagePath = os.path.join("Images", "Background_Image_Test-export.png")
 
-# Render the text surface
-text_surface = font.render('Text is showing in the window!', True, COLOR)
-text_rect = text_surface.get_rect()
-text_rect.center = (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2)
+backgroundImage = pygame.image.load(imagePath).convert_alpha()
+
+width = backgroundImage.get_width()
+height = backgroundImage.get_height()
+scale = 1
+
+bigBgImage = pygame.transform.smoothscale(backgroundImage, (width * scale, height * scale)).convert_alpha()
+
+imageRect = backgroundImage.get_rect()
 
 xPos = SCREEN_WIDTH / 2
 yPos = SCREEN_HEIGHT / 2
 
-clock = pygame.time.Clock()
-
-# Game loop
 running = True
+
+clock = pygame.time.Clock()
 
 yInput = 0
 xInput = 0
@@ -56,24 +63,34 @@ isDashing = False
 dashTime = 0.2
 dashTimer = 0
 
+dashCdTime = 0.2
+dashCdTimer = 0
 
+dashDir = [0, 0]
 
-while running:
+magnitude = 0
+
+inpList = []
+
+def StartDash():
+    global isDashing, dashTimer, dashDir
+
+    isDashing = True
+    dashTimer = dashTime
+    normedXVel = xVel/magnitude
+    normedYVel = yVel/magnitude
+    dashDir = [normedXVel, normedYVel]
+
+def GetInput():
+
+    global xInput, yInput, running, isDashing, dashTimer, dashDir, dashCdTimer, inpList
+
+    inpList = pygame.key.get_pressed()
+
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-    
-    inpList = pygame.key.get_pressed()
 
-    yInput = 0
-    xInput = 0
-
-    if (isDashing):
-        getInput = False
-    else:
-        getInput = True
-
-    if (getInput):
         if (inpList[pygame.K_w]):
             yInput += 1
         if (inpList[pygame.K_s]):
@@ -82,22 +99,43 @@ while running:
             xInput -= 1
         if (inpList[pygame.K_d]):
             xInput += 1
-    
-        if (inpList[pygame.K_LSHIFT]):
-            isDashing = True
+        
+        if (inpList[pygame.K_LSHIFT] and not dashCdTimer > 0):
+            StartDash()
+
+# Game Running
+
+while running:
+
+    magnitude = math.sqrt((xVel * xVel) + (yVel * yVel))
+
+    if (isDashing):
+        getInput = False
+    else:
+        getInput = True
+
+    if (getInput):
+        GetInput()
 
     if (isDashing and dashTimer == 0):
         isDashing = False
-
-        
-    mag = math.sqrt(xInput * xInput + yInput * yInput)
-    dirVector = [xInput, yInput]
-    if mag > 0:
-        dirVector = [xInput / mag, yInput / mag]
+        dashCdTimer = dashCdTime
     
-    if (isDashing):
-        xVel += dirVector[0] * dashSpeed
-        yVel += dirVector[1] * dashSpeed
+    if (isDashing): 
+        xVel = dashDir[0] * dashSpeed
+        yVel = dashDir[1] * dashSpeed
+
+    else:
+        mag = math.sqrt(xInput * xInput + yInput * yInput)
+        dirVector = [xInput, yInput]
+        if mag > 0:
+            dirVector = [xInput / mag, yInput / mag]
+        
+        if (isDashing):
+            xVel += dirVector[0] * dashSpeed
+            yVel += dirVector[1] * dashSpeed
+    
+    print(magnitude)
 
     dt = clock.tick() / 1000.0
 
@@ -105,13 +143,13 @@ while running:
     xVel += dirVector[0] * acceleration * dt
 
     if (xInput == 0 and yInput == 0):
-        xVel = xVel * (drag ** (dt * 60))
-        yVel = yVel * (drag ** (dt * 60))
+        xVel = xVel * (drag ** (dt * 1000))
+        yVel = yVel * (drag ** (dt * 1000))
     if (speed > maxSpeed):
         speed = speed * (0.9 ** (dt * 60))
 
     magnitude = (math.sqrt(yVel * yVel + xVel * xVel))
-    if (magnitude > maxSpeed):
+    if (magnitude > maxSpeed and not isDashing):
         xVel = (xVel / magnitude) * speed
         yVel = (yVel / magnitude) * speed
     
@@ -119,7 +157,8 @@ while running:
 
     # Drawing
     screen.fill(WHITE) # Fill screen with white background
-    screen.blit(text_surface, text_rect) # Draw the text
+
+    screen.blit(bigBgImage, imageRect)
 
     yPos -= yVel * dt
     xPos += xVel * dt
@@ -135,6 +174,11 @@ while running:
         dashTimer -= dt
     else:
         dashTimer = 0
+    
+    if (dashCdTimer > 0):
+        dashCdTimer -= dt
+    else:
+        dashCdTimer = 0
 
 
 # Quit Pygame
