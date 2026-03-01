@@ -4,6 +4,7 @@ import math
 import numpy as np
 import random
 import os
+import json
 
 pygame.init()
 
@@ -13,6 +14,8 @@ keycodes = {
     "left": pygame.K_a,
     "right": pygame.K_d
 }
+
+obstacles = []
 
 pWidth = 15
 pHeight = 15
@@ -29,9 +32,15 @@ maxHealth = currentHealth = 5
 
 dt = 0
 
-# Constants
-SCREEN_WIDTH = 800
-SCREEN_HEIGHT = 600
+tileSize = 64
+
+mapPath = "MapFiles/TestMap.json"
+mapFile = open(mapPath, "r")
+mapContents = json.load(mapFile)
+
+SCREEN_WIDTH = len(mapContents[0]) * tileSize
+SCREEN_HEIGHT = len(mapContents) * tileSize
+
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 GREEN = (200, 230, 83)
@@ -45,6 +54,7 @@ playerColor = GREEN
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Pygame Text Display")
 
+
 imagePath = os.path.join("Images", "Background_Image_Test-export.png")
 
 backgroundImage = pygame.image.load(imagePath).convert_alpha()
@@ -54,6 +64,10 @@ height = backgroundImage.get_height()
 scale = 1
 
 bigBgImage = pygame.transform.smoothscale(backgroundImage, (width * scale, height * scale)).convert_alpha()
+
+
+
+
 
 imageRect = backgroundImage.get_rect()
 
@@ -286,9 +300,9 @@ class Player:
                 self.movingInto[1] = 0
 
             if (self.movingInto[0] and self.xInput):
-                self.yVel *= (self.drag ** (dt * 1000))
+                self.yVel *= (o.friction ** (dt * 1000))
             if (self.movingInto[1] and self.yInput):
-                self.xVel *= (self.drag ** (dt * 1000))
+                self.xVel *= (o.friction ** (dt * 1000))
         
         self.xPos += self.xVel * dt
         self.yPos += self.yVel * dt
@@ -312,11 +326,13 @@ player = Player()
 
 
 class Obstacle:
-    def __init__(self, x, y, w, h):
+    def __init__(self, x, y, w, h, friction = 0.98):
         self.xPos = x
         self.yPos = y
         self.width = w
         self.height = h
+
+        self.friction = friction
 
         self.hitbox = pygame.Rect(x, y, w, h)
 
@@ -353,13 +369,181 @@ class Obstacle:
 
     
     def DrawObstacle(self):
+        #file = "Images/Tileset/PygameTileset-Sheet2.png"
+        #image = pygame.image.load(file)
+        #image = pygame.transform.scale(image, [128, 128]).convert_alpha()
+        #screen.blit(image, [self.xPos, self.yPos])
+
         pygame.draw.rect(screen, WHITE, self.hitbox)
     
-obstacles = [
-    Obstacle(150, 250, 100, 100),
-    Obstacle(300, 400, 50, 50),
-    Obstacle(500, 100, 100, 200)
-]
+class Tile:
+    def __init__(self, tileType, xCoord, yCoord, conditions):
+        global obstacles
+
+        self.map = map
+
+        self.xCoord = xCoord
+        self.yCoord = yCoord
+
+        self.tileSheetFile = open("TileSetStuffs/TileHandling.json", "r")
+        self.info = json.load(self.tileSheetFile)
+
+        self.displayTile = None
+
+        myTile = "wallTile1"
+
+        if (tileType == "o"):
+            tileType = "groundTiles"
+            listOfTiles = list(self.info["groundTiles"].keys())
+            myTile = random.choice(listOfTiles)
+
+        elif (tileType == "x"):
+            tileType = "wallTiles"
+            listOfTiles = list(self.info["wallTiles"].keys())
+
+            myTile = self.FindTileMatch("wallTiles", conditions)
+
+            myObstacle = Obstacle(xCoord * tileSize, yCoord * tileSize, tileSize, tileSize)
+            obstacles.append(myObstacle)
+
+        tileFile = self.info[tileType][myTile]["fileName"]
+
+        self.displayTile = "Images/Tileset/" + tileFile + ".png"
+    
+    def FindTileMatch(self, tileType, conditions):
+        defaultTile = "wallTile1"
+        myTile = defaultTile
+        if (tileType == "wallTiles"):
+            possibleMatch = True
+
+            
+
+            for t in (self.info["wallTiles"].keys()):
+                possibleMatch = True
+                restrictions = self.info["wallTiles"][t]["restrictions"]
+                matchCount = 0
+                greatestMatch = 0
+
+                for r in range(8):
+                    if restrictions[r] == -conditions[r]:
+                        possibleMatch = False
+                    if restrictions[r] == conditions[r]:
+                        matchCount += 1
+
+                
+
+            
+                if (possibleMatch == True):
+                    if (matchCount > greatestMatch):
+                        greatestMatch = matchCount
+                        myTile = t
+
+            
+        return myTile
+    
+    def DrawTile(self):
+        global tileSize
+
+        position = [self.xCoord * tileSize, self.yCoord * tileSize]
+
+        tileImage = pygame.image.load(self.displayTile).convert_alpha()
+        imageSize = tileImage.get_size()
+        scaleModifier = tileSize / imageSize[0]
+        tileImage = pygame.transform.scale(tileImage, (imageSize[0] * scaleModifier, imageSize[1] * scaleModifier)).convert_alpha()
+
+        screen.blit(tileImage, position)
+
+
+
+        
+
+
+
+class Map:
+    def __init__(self, xSize, ySize):
+        self.xSize = xSize
+        self.ySize = ySize
+
+        self.tileList = []
+
+        self.info = {}
+    
+    def MakeNewRandomMap(self):
+        y = 10
+        x = 14
+
+        yList = []
+        xList = []
+
+        for i in range(y):
+            for t in range(x):
+                xList.append(random.choice(["x", "o"]))
+            yList.append(xList)
+            xList = []
+
+        with open("MapFiles/RandomMap.json", "w") as map:
+            json.dump(yList, map, indent=4)
+
+        self.GenerateMap("RandomMap")
+    
+    def MakeConditions(self, tile, x, y):
+        conditions = []
+        for i in range(3):
+            yToCheck = y + i - 1
+            for j in range(3):
+               
+                xToCheck = x + j - 1
+                try:
+                    if (xToCheck == x and yToCheck == y):
+                        pass
+                    elif (xToCheck == -1 or yToCheck == -1):
+                        conditions.append(-1)
+                    elif (self.info[yToCheck][xToCheck] == "x"):
+                        conditions.append(1)
+                    else:
+                        conditions.append(-1)
+                except IndexError:
+                    conditions.append(-1)
+
+        return conditions
+
+
+    
+    def GenerateMap(self, mapFile):
+        contents = open("MapFiles/" + str(mapFile) + ".json", "r")
+        self.info = json.load(contents)
+
+        yCoord = 0
+        xCoord = 0
+
+        for y in self.info:
+            xCoord = 0
+            for t in self.info[yCoord]:
+                if (t == "x"):
+                    conditions = self.MakeConditions(t, xCoord, yCoord)
+                else:
+                    conditions = [0, 0, 0,
+                                  0, 0,
+                                  0, 0, 0]
+
+                newTile = Tile(t, xCoord, yCoord, conditions)
+                self.tileList.append(newTile)
+                xCoord += 1
+            yCoord += 1
+    
+    def DrawMap(self):
+        for t in self.tileList:
+            t.DrawTile()
+
+
+
+map = Map(4, 3)
+
+
+mapFile = "TestMap"
+map.GenerateMap(mapFile)
+
+#map.MakeNewRandomMap()
 
 def StartDash():
     global isDashing, dashTimer, dashDir
@@ -458,7 +642,7 @@ while running:
     screen.blit(bigBgImage, imageRect)
 
 
-
+    map.DrawMap()
 
     if (iFrameTimer > 0):
         playerColor = RED
@@ -485,8 +669,8 @@ while running:
 
     CreateHealthBar()
 
-    for o in obstacles:
-        o.DrawObstacle()
+    #for o in obstacles:
+        #o.DrawObstacle()
     
     # Update the display
     pygame.display.update()
