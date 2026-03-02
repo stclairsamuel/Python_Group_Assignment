@@ -4,6 +4,10 @@ import math
 import numpy as np
 import random
 import os
+import json
+import MapGen
+import PlayerScript
+import ObstaclesScript
 
 pygame.init()
 
@@ -14,19 +18,19 @@ keycodes = {
     "right": pygame.K_d
 }
 
-acceleration = 4000
-maxSpeed = 400
-speed = maxSpeed
-dashSpeed = 800
-xVel = 0
-yVel = 0
-drag = 0.995
-
 maxHealth = currentHealth = 5
 
-# Constants
-SCREEN_WIDTH = 800
-SCREEN_HEIGHT = 600
+dt = 0
+
+tileSize = 64
+
+mapPath = "MapFiles/RandomMap.json"
+mapFile = open(mapPath, "r")
+mapContents = json.load(mapFile)
+
+SCREEN_WIDTH = len(mapContents[0]) * tileSize
+SCREEN_HEIGHT = len(mapContents) * tileSize
+
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 GREEN = (200, 230, 83)
@@ -39,6 +43,7 @@ playerColor = GREEN
 # Set up the display
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Pygame Text Display")
+
 
 imagePath = os.path.join("Images", "Background_Image_Test-export.png")
 
@@ -55,23 +60,9 @@ imageRect = backgroundImage.get_rect()
 xPos = SCREEN_WIDTH / 2
 yPos = SCREEN_HEIGHT / 2
 
-playerHitbox = pygame.Rect(SCREEN_WIDTH/2, SCREEN_HEIGHT/2, 10, 10)
-
 running = True
 
 clock = pygame.time.Clock()
-
-yInput = 0
-xInput = 0
-
-getInput = True
-
-isDashing = False
-dashTime = 0.2
-dashTimer = 0
-
-dashCdTime = 0.2
-dashCdTimer = 0
 
 iFrameTime = 0.2
 iFrameTimer = 0
@@ -88,6 +79,20 @@ spawnProjTime = 1
 spawnProjTimer = 0
 
 projSize = 10
+
+def ReflectVector(vectorToReflect, normal):
+    # R = V - 2(V DOT N)N
+
+    reflectedVector = [0, 0]
+
+    dotProduct = vectorToReflect[0] * normal[0] + vectorToReflect[1] * normal[1]
+
+
+    reflectedVector[0] - (2 * dotProduct * normal[0])
+    reflectedVector[1] - (2 * dotProduct * normal[0])
+
+    return reflectedVector
+
 
 class Projectile:
     def __init__(self):
@@ -110,23 +115,6 @@ class Projectile:
 
         self.lifeTime = self.lifeTimer = 10
     
-    def Move(self):
-        global xPos, yPos
-        pPos = [xPos, yPos]
-        myPos = [self.xPos, self.yPos]
-
-        xDist = (pPos[0] - myPos[0])
-        yDist = (pPos[1] - myPos[1])
-        totalDist = math.sqrt(math.pow(xDist, 2) + math.pow(yDist, 2))
-
-        dirToPlayer = [xDist / totalDist, yDist / totalDist]
-
-        self.xVel += dirToPlayer[0] * self.acceleration * dt
-        self.yVel += dirToPlayer[1] * self.acceleration * dt
-
-        self.xPos += self.xVel * dt
-        self.yPos += self.yVel * dt
-    
     def CheckCollision(self):
         global playerHitbox
 
@@ -136,38 +124,38 @@ class Projectile:
 
         return (pygame.Rect.colliderect(myHitbox, playerHitbox))
 
-def StartDash():
-    global isDashing, dashTimer, dashDir
 
-    isDashing = True
-    dashTimer = dashTime
-    normedXVel = xVel/magnitude
-    normedYVel = yVel/magnitude
-    dashDir = [normedXVel, normedYVel]
+                
 
-def GetInput():
-    global xInput, yInput, running, isDashing, dashTimer, dashDir, dashCdTimer, inpList
+    #def StartDash(self):
 
-    xInput = 0
-    yInput = 0
 
-    inpList = pygame.key.get_pressed()
+    
+    #def TakeDamage(self):
 
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
+    
+    #def Die(self):
 
-    if (inpList[pygame.K_w]):
-        yInput += 1
-    if (inpList[pygame.K_s]):
-        yInput -= 1
-    if (inpList[pygame.K_a]):
-        xInput -= 1
-    if (inpList[pygame.K_d]):
-        xInput += 1
-        
-    if (inpList[pygame.K_LSHIFT] and not dashCdTimer > 0):
-        StartDash()
+player = PlayerScript.Player(SCREEN_WIDTH/2, SCREEN_HEIGHT/2)
+
+
+
+
+    
+    
+
+map = MapGen.Map()
+
+
+map.MakeNewRandomMap()
+
+obstacles = []
+for t in map.tileList:
+    if (t.tileLetter == "x" or t.tileLetter == "z"):
+        obstacles.append(ObstaclesScript.Obstacle(t.hitbox[0], t.hitbox[1], t.hitbox[2], t.hitbox[3]))
+
+#mapFile = "TestMap"
+#map.GenerateMap(mapFile)
 
 def Die():
     pygame.quit()
@@ -182,7 +170,6 @@ def TakeDamage():
     if (currentHealth <= 0):
         Die()
 
-
 def SpawnProjectile():
     newProjectile = Projectile()
 
@@ -191,82 +178,78 @@ def SpawnProjectile():
 def CreateHealthBar():
     global currentHealth
 
-    size = 15
+    imagePath = os.path.join("Images", "PygameHeart.png")
+
+    heartImage = pygame.image.load(imagePath).convert_alpha()
+
+    scale = 2
+    width = heartImage.get_width()
+    height = heartImage.get_height()
+
+    pygame.draw.rect(screen, WHITE, (30, 35, 210, 40))
+
+    biggerHeart = pygame.transform.scale(heartImage, (width * scale, height * scale)).convert_alpha()
+
     horizontalDistance = 40
 
     position1 = [40, 40]
 
     for i in range(currentHealth):
-        pygame.draw.circle(screen, RED, [position1[0] + (i * horizontalDistance), position1[1]], size)
+        screen.blit(biggerHeart, (position1[0] + (i * horizontalDistance), position1[1]))
+
+
+def Timers():
+    global dashTimer, spawnProjTimer, iFrameTimer
+
+    #if (dashTimer > 0):
+    #    player.dashTimer -= dt
+    #else:
+    #    player.dashTimer = 0
     
+    #if (dashCdTimer > 0):
+    #    player.dashCdTimer -= dt
+    #else:
+    #    player.dashCdTimer = 0
+
+    if (spawnProjTimer > 0):
+        spawnProjTimer -= dt
+    else:
+        spawnProjTimer = spawnProjTime
+        SpawnProjectile()
+    
+    if (iFrameTimer > 0):
+        player.iFrameTimer -= dt
+    else:
+        player.iFrameTimer = 0
+
+def DrawMap():
+    for t in map.tileList:
+        tile = t.DrawTile(tileSize)
+        screen.blit(tile[0], tile[1])
 
 # Game Running
 
 while running:
-
-    if (getInput):
-        GetInput()
-
-    magnitude = math.sqrt((xVel * xVel) + (yVel * yVel))
-
-    if (isDashing):
-        getInput = False
-    else:
-        getInput = True
-
-    if (isDashing and dashTimer == 0):
-        isDashing = False
-        dashCdTimer = dashCdTime
-    
-    if (isDashing): 
-        xVel = dashDir[0] * dashSpeed
-        yVel = dashDir[1] * dashSpeed
-
-    else:
-        mag = math.sqrt(xInput * xInput + yInput * yInput)
-        dirVector = [xInput, yInput]
-        if mag > 0:
-            dirVector = [xInput / mag, yInput / mag]
-        
-        if (isDashing):
-            xVel += dirVector[0] * dashSpeed
-            yVel += dirVector[1] * dashSpeed
-
     dt = clock.tick() / 1000.0
 
-    yVel += dirVector[1] * acceleration * dt
-    xVel += dirVector[0] * acceleration * dt
-
-    if (xInput == 0 and yInput == 0):
-        xVel = xVel * (drag ** (dt * 1000))
-        yVel = yVel * (drag ** (dt * 1000))
-
-    if (speed > maxSpeed):
-        speed = speed * (0.9 ** (dt * 60))
-
-    magnitude = (math.sqrt(yVel * yVel + xVel * xVel))
-    if (magnitude > maxSpeed and not isDashing):
-        xVel = (xVel / magnitude) * speed
-        yVel = (yVel / magnitude) * speed
+    if (player.getInput):
+        player.GetInput()
     
-    playerHitbox = pygame.Rect(xPos, yPos, 10, 10)
+    player.Move(dt, obstacles)
 
     # Drawing
     screen.fill(WHITE) # Fill screen with white background
 
-    screen.blit(bigBgImage, imageRect)
-
-    yPos -= yVel * dt
-    xPos += xVel * dt
-    posVector = [xPos, yPos]
+    DrawMap()
 
     if (iFrameTimer > 0):
         playerColor = RED
     else:
         playerColor = GREEN
 
-    pygame.draw.circle(screen, playerColor, posVector, 20)
-
+    pygame.draw.circle(screen, playerColor, [player.xPos, player.yPos], 20)
+    
+    '''
     for p in projectiles:
         pygame.draw.circle(screen, RED, [p.xPos, p.yPos], p.size)
         p.Move()
@@ -279,38 +262,15 @@ while running:
     
         if (p.CheckCollision() and iFrameTimer == 0):
             TakeDamage()
+    '''
     
     # Timers
-
-    if (dashTimer > 0):
-        dashTimer -= dt
-    else:
-        dashTimer = 0
-    
-    if (dashCdTimer > 0):
-        dashCdTimer -= dt
-    else:
-        dashCdTimer = 0
-
-    if (spawnProjTimer > 0):
-        spawnProjTimer -= dt
-    else:
-        spawnProjTimer = spawnProjTime
-        SpawnProjectile()
-    
-    if (iFrameTimer > 0):
-        iFrameTimer -= dt
-    else:
-        iFrameTimer = 0
+    Timers()
 
     CreateHealthBar()
-    
+
     # Update the display
     pygame.display.update()
-    
-    
-        
-
 
 # Quit Pygame
 pygame.quit()
