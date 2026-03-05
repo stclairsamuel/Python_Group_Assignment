@@ -8,6 +8,7 @@ import json
 import MapGen
 import PlayerScript
 import ObstaclesScript
+import PathfindingScript
 
 pygame.init()
 
@@ -31,6 +32,23 @@ mapContents = json.load(mapFile)
 SCREEN_WIDTH = len(mapContents[0]) * tileSize
 SCREEN_HEIGHT = len(mapContents) * tileSize
 
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+
+player = PlayerScript.Player(SCREEN_WIDTH/2, SCREEN_HEIGHT/2)
+
+mapXSize = 8
+mapYSize = 6
+
+startRoom = (0, 3)
+
+map = MapGen.Map(mapXSize, mapYSize, startRoom)
+
+map.RandomizeMapLayout(8)
+
+#room = MapGen.Room()
+
+#room.MakeNewRandomMap()
+
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 GREEN = (200, 230, 83)
@@ -38,27 +56,20 @@ RED = (255, 0, 0)
 
 playerColor = GREEN
 
+found_room = next((room for room in map.roomList if room.mapPos == (map.currentRoom[0], map.currentRoom[1])), None)
 
+if (found_room):
+    room = found_room
+
+obstacles = []
+for t in room.tileList:
+    if (t.tileLetter == "x" or t.tileLetter == "z"):
+        obstacles.append(ObstaclesScript.Obstacle(t.hitbox[0], t.hitbox[1], t.hitbox[2], t.hitbox[3]))
 
 # Set up the display
-screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-pygame.display.set_caption("Pygame Text Display")
 
 
-imagePath = os.path.join("Images", "Background_Image_Test-export.png")
-
-backgroundImage = pygame.image.load(imagePath).convert_alpha()
-
-width = backgroundImage.get_width()
-height = backgroundImage.get_height()
 scale = 1
-
-bigBgImage = pygame.transform.smoothscale(backgroundImage, (width * scale, height * scale)).convert_alpha()
-
-imageRect = backgroundImage.get_rect()
-
-xPos = SCREEN_WIDTH / 2
-yPos = SCREEN_HEIGHT / 2
 
 running = True
 
@@ -124,38 +135,10 @@ class Projectile:
 
         return (pygame.Rect.colliderect(myHitbox, playerHitbox))
 
-
-                
-
-    #def StartDash(self):
-
-
-    
-    #def TakeDamage(self):
-
-    
-    #def Die(self):
-
-player = PlayerScript.Player(SCREEN_WIDTH/2, SCREEN_HEIGHT/2)
-
-
-
-
-    
-    
-
-map = MapGen.Map()
-
-
-map.MakeNewRandomMap()
-
 obstacles = []
-for t in map.tileList:
+for t in room.tileList:
     if (t.tileLetter == "x" or t.tileLetter == "z"):
         obstacles.append(ObstaclesScript.Obstacle(t.hitbox[0], t.hitbox[1], t.hitbox[2], t.hitbox[3]))
-
-#mapFile = "TestMap"
-#map.GenerateMap(mapFile)
 
 def Die():
     pygame.quit()
@@ -199,17 +182,17 @@ def CreateHealthBar():
 
 
 def Timers():
-    global dashTimer, spawnProjTimer, iFrameTimer
+    global spawnProjTimer, iFrameTimer
 
-    #if (dashTimer > 0):
-    #    player.dashTimer -= dt
-    #else:
-    #    player.dashTimer = 0
+    if (player.dashCdTimer > 0):
+        player.dashCdTimer -= dt
+    else:
+        player.dashCdTimer = 0
     
-    #if (dashCdTimer > 0):
-    #    player.dashCdTimer -= dt
-    #else:
-    #    player.dashCdTimer = 0
+    if (player.dashTimer > 0):
+        player.dashTimer -= dt
+    else:
+        player.dashTimer = 0
 
     if (spawnProjTimer > 0):
         spawnProjTimer -= dt
@@ -223,14 +206,20 @@ def Timers():
         player.iFrameTimer = 0
 
 def DrawMap():
-    for t in map.tileList:
-        tile = t.DrawTile(tileSize)
-        screen.blit(tile[0], tile[1])
+    for t in room.tileList:
+        t.DrawTile(screen)
 
 # Game Running
 
 while running:
-    dt = clock.tick() / 1000.0
+
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+    
+    dt = clock.tick(60) / 1000.0
+
+    player.getInput = not player.isDashing
 
     if (player.getInput):
         player.GetInput()
@@ -241,6 +230,11 @@ while running:
     screen.fill(WHITE) # Fill screen with white background
 
     DrawMap()
+
+    #for i in (myAlgo.path):
+        #pygame.draw.circle(screen, RED, (32 + i[0] * 64, 32 + i[1] * 64), 20)
+
+    #pygame.draw.circle(screen, GREEN, (32 + myAlgo.endPos[0] * 64, 32 + myAlgo.endPos[1] * 64), 20)
 
     if (iFrameTimer > 0):
         playerColor = RED
