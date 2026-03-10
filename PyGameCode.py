@@ -5,7 +5,7 @@ import numpy as np
 import random
 import os
 import json
-import MapGen
+import MapGen2
 import PlayerScript
 import ObstaclesScript
 import PathfindingScript
@@ -41,9 +41,11 @@ mapYSize = 6
 
 startRoom = (0, 3)
 
-map = MapGen.Map(mapXSize, mapYSize, startRoom)
+map = MapGen2.Map(mapXSize, mapYSize, 8)
 
-map.RandomizeMapLayout(8)
+map.MakeNewMap()
+
+map.currentRoom.GenerateMap()
 
 #room = MapGen.Room()
 
@@ -56,10 +58,12 @@ RED = (255, 0, 0)
 
 playerColor = GREEN
 
-found_room = next((room for room in map.roomList if room.mapPos == (map.currentRoom[0], map.currentRoom[1])), None)
+found_room = next((room for room in map.rooms if room.mapPos == (map.currentRoom.mapPos[0], map.currentRoom.mapPos[1])), None)
 
 if (found_room):
     room = found_room
+else:
+    print("fail")
 
 obstacles = []
 for t in room.tileList:
@@ -206,8 +210,10 @@ def Timers():
         player.iFrameTimer = 0
 
 def DrawMap():
-    for t in room.tileList:
+    for t in map.currentRoom.tileList:
         t.DrawTile(screen)
+    #for d in map.currentRoom.doors:
+    #    pygame.draw.rect(screen, WHITE, d.hitbox)
 
 # Game Running
 
@@ -224,7 +230,16 @@ while running:
     if (player.getInput):
         player.GetInput()
     
-    player.Move(dt, obstacles)
+    player.Move(dt, map.currentRoom.obstacles)
+
+    myHitbox = pygame.Rect(player.xPos, player.yPos, player.hitboxSize, player.hitboxSize)
+
+    
+
+    #for d in map.currentRoom.doors:
+        #d.CheckContact(pygame.Rect(player.xPos, player.yPos, player.hitboxSize, player.hitboxSize))
+        #print(d.myPos)
+
 
     # Drawing
     screen.fill(WHITE) # Fill screen with white background
@@ -242,6 +257,8 @@ while running:
         playerColor = GREEN
 
     pygame.draw.circle(screen, playerColor, [player.xPos, player.yPos], 20)
+
+    map.currentRoom.CheckDoorCollisions(myHitbox, player)
     
     '''
     for p in projectiles:
