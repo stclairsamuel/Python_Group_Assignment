@@ -1,0 +1,19 @@
+The TileHandling file is organized with dictionaries as follows:
+
+Layer 1
+    Key = Tile Type (ground, wall) : Value = Layer 2 Dictionary
+
+Layer 2
+    Key = Tile Name : Value = Layer 3 Dictionary
+
+Layer 3:
+    Key = File : Value = File name as string
+    Key = Restrictions : Value = Layer 4 Dictionary
+
+Layer 4:
+    Key = Top : Value = -1, 0 or 1, 
+    Key = Bottom: Value = -1, 0, or 1
+    Key = Left: Value = -1, 0, or 1
+    Key = Right: Value = -1, 0, or 1
+
+    Values are dependant on if the tile cannot (-1), doesn't care (0), or has to (1), have a tile in that adjacent space

@@ -1,0 +1,611 @@
+{
+    "groundTiles" : {
+        "groundTile1" : {
+            "fileName": "PygameTileset-Sheet2",
+            "restrictions" : [
+                0, 0, 0,
+                0, 0,
+                0, 0, 0
+            ]
+        },
+
+        "groundTile2" : {
+            "fileName": "PygameTileset-Sheet3",
+            "restrictions" : [
+                0, 0, 0,
+                0, 0,
+                0, 0, 0
+            ]
+        },
+
+        "groundTile3" : {
+            "fileName": "PygameTileset-Sheet4",
+            "restrictions" : [
+                0, 0, 0,
+                0, 0,
+                0, 0, 0
+            ]
+        },
+
+        "groundTile4" : {
+            "fileName": "PygameTileset-Sheet5",
+            "restrictions" : [
+                0, 0, 0,
+                0, 0,
+                0, 0, 0
+            ]
+        },
+
+        "groundTile5" : {
+            "fileName": "PygameTileset-Sheet6",
+            "restrictions" : [
+                0, 0, 0,
+                0, 0,
+                0, 0, 0
+            ]
+        },
+
+        "groundTile6" : {
+            "fileName": "PygameTileset-Sheet7",
+            "restrictions" : [
+                0, 0, 0,
+                0, 0,
+                0, 0, 0
+            ]
+        },
+
+        "groundTile7" : {
+            "fileName": "PygameTileset-Sheet8",
+            "restrictions" : [
+                0, 0, 0,
+                0, 0,
+                0, 0, 0
+            ]
+        },
+
+        "groundTile8" : {
+            "fileName": "PygameTileset-Sheet9",
+            "restrictions" : [
+                0, 0, 0,
+                0, 0,
+                0, 0, 0
+            ]
+        }
+    },
+
+    "wallTiles" : {
+        "wallTile1" : {
+            "fileName" : "PygameTileset-Sheet10",
+            "restrictions" : [
+                0, -1, 0,
+                -1, 1,
+                0, 1, 1
+            ]
+        },
+
+        "wallTile2" : {
+            "fileName" : "PygameTileset-Sheet11",
+            "restrictions" : [
+                0, -1, 0,
+                1, 1,
+                1, 1, 1
+            ]
+        },
+
+        "wallTile3" : {
+            "fileName" : "PygameTileset-Sheet12",
+            "restrictions" : [
+                0, -1, 0,
+                1, -1,
+                1, 1, 0
+            ]
+        },
+
+        "wallTile4" : {
+            "fileName" : "PygameTileset-Sheet13",
+            "restrictions" : [
+                0, 1, 1,
+                -1, 1,
+                0, 1, 1
+            ]
+        },
+
+        "wallTile5" : {
+            "fileName" : "PygameTileset-Sheet14",
+            "restrictions" : [
+                0, 1, 0,
+                1, 1,
+                0, 1, 0
+            ]
+        },
+
+        "wallTile6" : {
+            "fileName" : "PygameTileset-Sheet15",
+            "restrictions" : [
+                1, 1, 0,
+                1, -1,
+                1, 1, 0
+            ]
+        },
+
+        "wallTile7" : {
+            "fileName" : "PygameTileset-Sheet16",
+            "restrictions" : [
+                1, 1, 1,
+                1, 1,
+                0, -1, 0
+            ]
+        },
+
+        "wallTile8" : {
+            "fileName" : "PygameTileset-Sheet17",
+            "restrictions" : [
+                1, 1, 0,
+                1, -1,
+                0, -1, 0
+            ]
+        },
+
+        "wallTile9" : {
+            "fileName" : "PygameTileset-Sheet18",
+            "restrictions" : [
+                0, -1, 0,
+                -1, -1,
+                0, 1, 0
+            ]
+        },
+
+        "wallTile10" : {
+            "fileName" : "PygameTileset-Sheet19",
+            "restrictions" : [
+                0, 1, 0,
+                -1, -1,
+                0, 1, 0
+            ]
+        },
+
+        "wallTile11" : {
+            "fileName" : "PygameTileset-Sheet20",
+            "restrictions" : [
+                0, 1, 0,
+                -1, -1,
+                0, -1, 0
+            ]
+        },
+
+        "wallTile12" : {
+            "fileName" : "PygameTileset-Sheet21",
+            "restrictions" : [
+                0, -1, 0,
+                -1, 1,
+                0, -1, 0
+            ]
+        },
+
+        "wallTile13" : {
+            "fileName" : "PygameTileset-Sheet22",
+            "restrictions" : [
+                0, -1, 0,
+                1, 1,
+                0, -1, 0
+            ]
+        },
+
+        "wallTile14" : {
+            "fileName" : "PygameTileset-Sheet23",
+            "restrictions" : [
+                0, -1, 0,
+                1, -1,
+                0, -1, 0
+            ]
+        },
+
+        "wallTile15" : {
+            "fileName" : "PygameTileset-Sheet24",
+            "restrictions" : [
+                0, 1, 1,
+                -1, 1,
+                0, -1, 0
+            ]
+        },
+
+        "wallTile16" : {
+            "fileName" : "PygameTileset-Sheet25",
+            "restrictions" : [
+                0, 1, 1,
+                -1, 1,
+                0, 1, -1
+            ]
+        },
+
+        "wallTile17" : {
+            "fileName" : "PygameTileset-Sheet26",
+            "restrictions" : [
+                -1, 1, 0,
+                1, -1,
+                1, 1, 0
+            ]
+        },
+
+        "wallTile18" : {
+            "fileName" : "PygameTileset-Sheet27",
+            "restrictions" : [
+                0, -1, 0,
+                1, 1,
+                -1, 1, 1
+            ]
+        },
+
+        "wallTile19" : {
+            "fileName" : "PygameTileset-Sheet28",
+            "restrictions" : [
+                0, -1, 0,
+                1, -1,
+                -1, 1, 0
+            ]
+        },
+
+        "wallTile20" : {
+            "fileName" : "PygameTileset-Sheet29",
+            "restrictions" : [
+                0, 1, -1,
+                -1, 1,
+                0, -1, 0
+            ]
+        },
+
+        "wallTile21" : {
+            "fileName" : "PygameTileset-Sheet30",
+            "restrictions" : [
+                -1, 1, 0,
+                1, -1,
+                0, -1, 0
+            ]
+        },
+
+        "wallTile22" : {
+            "fileName" : "PygameTileset-Sheet31",
+            "restrictions" : [
+                0, -1, 0,
+                1, 1,
+                -1, 1, -1
+            ]
+        },
+
+        "wallTile23" : {
+            "fileName" : "PygameTileset-Sheet32",
+            "restrictions" : [
+                -1, 1, 0,
+                1, -1,
+                -1, 1, 0
+            ]
+        },
+
+        "wallTile24" : {
+            "fileName" : "PygameTileset-Sheet33",
+            "restrictions" : [
+                0, 1, -1,
+                -1, 1,
+                0, 1, -1
+            ]
+        },
+
+        "wallTile25" : {
+            "fileName" : "PygameTileset-Sheet34",
+            "restrictions" : [
+                -1, 1, -1,
+                1, 1,
+                0, -1, 0
+            ]
+        },
+
+        "wallTile26" : {
+            "fileName" : "PygameTileset-Sheet35",
+            "restrictions" : [
+                0, -1, 0,
+                -1, 1,
+                0, 1, -1
+            ]
+        },
+
+        "wallTile27" : {
+            "fileName" : "PygameTileset-Sheet36",
+            "restrictions" : [
+                0, -1, 0,
+                -1, -1,
+                0, -1, 0
+            ]
+        },
+
+        "wallTile28" : {
+            "fileName" : "PygameTileset-Sheet45",
+            "restrictions" : [
+                1, 1, -1,
+                1, 1,
+                0, -1, 0
+            ]
+        },
+
+        "wallTile29" : {
+            "fileName" : "PygameTileset-Sheet46",
+            "restrictions" : [
+                -1, 1, 1,
+                1, 1,
+                -1, 1, -1
+            ]
+        },
+
+        "wallTile30" : {
+            "fileName" : "PygameTileset-Sheet47",
+            "restrictions" : [
+                1, 1, -1,
+                1, 1,
+                -1, 1, -1
+            ]
+        },
+
+        "wallTile31" : {
+            "fileName" : "PygameTileset-Sheet48",
+            "restrictions" : [
+                -1, 1, -1,
+                1, 1,
+                1, 1, -1
+            ]
+        },
+
+        "wallTile32" : {
+            "fileName" : "PygameTileset-Sheet49",
+            "restrictions" : [
+                -1, 1, -1,
+                1, 1,
+                -1, 1, 1
+            ]
+        },
+
+        "wallTile33" : {
+            "fileName" : "PygameTileset-Sheet50",
+            "restrictions" : [
+                -1, 1, 1,
+                1, 1,
+                0, -1, 0
+            ]
+        },
+
+        "wallTile34" : {
+            "fileName" : "PygameTileset-Sheet51",
+            "restrictions" : [
+                1, 1, 0,
+                1, -1,
+                -1, 1, 0
+            ]
+        },
+
+        "wallTile35" : {
+            "fileName" : "PygameTileset-Sheet52",
+            "restrictions" : [
+                0, 1, -1,
+                -1, 1,
+                0, 1, 1
+            ]
+        },
+
+        "wallTile36" : {
+            "fileName" : "PygameTileset-Sheet53",
+            "restrictions" : [
+                0, -1, 0,
+                1, 1,
+                1, 1, -1
+            ]
+        },
+
+        "wallTile37" : {
+            "fileName" : "PygameTileset-Sheet54",
+            "restrictions" : [
+                -1, 1, 1,
+                1, 1,
+                1, 1, -1
+            ]
+        },
+
+        "wallTile38" : {
+            "fileName" : "PygameTileset-Sheet55",
+            "restrictions" : [
+                1, 1, -1,
+                1, 1,
+                -1, 1, 1
+            ]
+        },
+
+        "wallTile39" : {
+            "fileName" : "PygameTileset-Sheet56",
+            "restrictions" : [
+                -1, 1, 1,
+                1, 1,
+                -1, 1, 1
+            ]
+        },
+
+        "wallTile40" : {
+            "fileName" : "PygameTileset-Sheet57",
+            "restrictions" : [
+                1, 1, 1,
+                1, 1,
+                -1, 1, -1
+            ]
+        },
+
+        "wallTile41" : {
+            "fileName" : "PygameTileset-Sheet58",
+            "restrictions" : [
+                1, 1, -1,
+                1, 1,
+                1, 1, -1
+            ]
+        },
+
+        "wallTile42" : {
+            "fileName" : "PygameTileset-Sheet59",
+            "restrictions" : [
+                -1, 1, -1,
+                1, 1,
+                1, 1, 1
+            ]
+        },
+
+        "wallTile43" : {
+            "fileName" : "PygameTileset-Sheet60",
+            "restrictions" : [
+                -1, 1, -1,
+                1, 1,
+                -1, 1, -1
+            ]
+        },
+
+        "wallTile44" : {
+            "fileName" : "PygameTileset-Sheet61",
+            "restrictions" : [
+                1, 1, 1,
+                1, 1,
+                -1, 1, 1
+            ]
+        },
+
+        "wallTile45" : {
+            "fileName" : "PygameTileset-Sheet62",
+            "restrictions" : [
+                -1, 1, 1,
+                1, 1,
+                1, 1, 1
+            ]
+        },
+
+        "wallTile46" : {
+            "fileName" : "PygameTileset-Sheet63",
+            "restrictions" : [
+                1, 1, -1,
+                1, 1,
+                1, 1, 1
+            ]
+        },
+
+        "wallTile47" : {
+            "fileName" : "PygameTileset-Sheet64",
+            "restrictions" : [
+                1, 1, 1,
+                1, 1,
+                1, 1, -1
+            ]
+        }
+    },
+
+    "borderTiles" : {
+        "borderTile1" : {
+            "fileName" : "PygameTileset-Sheet37",
+            "restrictions" : [
+                1, 1, -1,
+                1, 1,
+                1, 1, 1
+            ]
+        },
+
+        "borderTile2" : {
+            "fileName" : "PygameTileset-Sheet38",
+            "restrictions" : [
+                0, 0, 0,
+                1, 1,
+                1, 1, 1
+            ]
+        },
+
+        "borderTile3" : {
+            "fileName" : "PygameTileset-Sheet39",
+            "restrictions" : [
+                -1, 1, 1,
+                1, 1,
+                1, 1, 1
+            ]
+        },
+
+        "borderTile4" : {
+            "fileName" : "PygameTileset-Sheet40",
+            "restrictions" : [
+                1, 1, 1,
+                1, 1,
+                1, 1, -1
+            ]
+        },
+
+        "borderTile5" : {
+            "fileName" : "PygameTileset-Sheet41",
+            "restrictions" : [
+                1, 1, 1,
+                1, 1,
+                0, 0, 0
+            ]
+        },
+
+        "borderTile6" : {
+            "fileName" : "PygameTileset-Sheet42",
+            "restrictions" : [
+                1, 1, 1,
+                1, 1,
+                -1, 1, 1
+            ]
+        },
+
+        "borderTile7" : {
+            "fileName" : "PygameTileset-Sheet43",
+            "restrictions" : [
+                1, 1, 0,
+                1, 0,
+                1, 1, 0
+            ]
+        },
+
+        "borderTile8" : {
+            "fileName" : "PygameTileset-Sheet44",
+            "restrictions" : [
+                0, 1, 1,
+                0, 1,
+                0, 1, 1
+            ]
+        },
+
+        "borderTile9" : {
+            "fileName" : "PygameBorderTiles-Sheet10",
+            "restrictions" : [
+                1, 1, 0,
+                1, -1,
+                0, -1, -1
+            ]
+        },
+
+        "borderTile10" : {
+            "fileName" : "PygameBorderTiles-Sheet11",
+            "restrictions" : [
+                0, -1, -1,
+                1, -1,
+                1, 1, 0
+            ]
+        },
+
+        "borderTile11" : {
+            "fileName" : "PygameBorderTiles-Sheet12",
+            "restrictions" : [
+                -1, -1, 0,
+                -1, 1,
+                0, 1, 1
+            ]
+        },
+
+        "borderTile12" : {
+            "fileName" : "PygameBorderTiles-Sheet13",
+            "restrictions" : [
+                0, 1, 1,
+                -1, 1,
+                -1, -1, 0
+            ]
+        }
+    }
+
+}
