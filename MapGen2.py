@@ -8,11 +8,14 @@ import json
 import PathfindingScript
 import ObstaclesScript
 import copy
+import EnemyScripts
 
 class Map:
     def __init__(self, maxLength, maxHeight, numOfRooms):
         self.maxLength = maxLength
         self.maxHeight = maxHeight
+
+        self.enemyGroup = []
 
         self.numOfRooms = numOfRooms
 
@@ -48,7 +51,8 @@ class Map:
 
             lastRoom = newRoom
         
-        self.AddSideRooms()
+        for i in range(3):
+            self.AddSideRooms()
         
         self.currentRoom = self.rooms[0]
 
@@ -89,7 +93,13 @@ class Map:
                 continue
             for r in self.rooms:
                 if (p == r.mapPos):
-                    positionsToCheck.remove(p)
+                    # ERROR HERE
+                    try:
+                        positionsToCheck.remove(p)
+                    except:
+                        print(f'error at {p}')
+        if (len(positionsToCheck) == 0):
+            print("Yikes!!!")
         
         return(random.choice(positionsToCheck))
 
@@ -184,14 +194,16 @@ class Room:
             myPos = [random.randint(2, xLength-1), random.randint(2, yLength-1)]
 
         for i in range(self.maxWallSize):
-            if (info[myPos[1]-1][myPos[0]-1] != "z"):
-                info[myPos[1]-1][myPos[0]-1] = "x"
-            directions = random.choice([[[-1, 1],[0]], [[0],[-1, 1]]])
-            if (myPos[0] == 0 and -1 in directions[0]): directions[0].remove(-1)
-            if (myPos[0] == len(info[0]) and 1 in directions[0]): directions[0].remove(1)
+            # WORKING ON THIS
 
-            if (myPos[1] == 0 and -1 in directions[1]): directions[1].remove(-1)
-            if (myPos[1] == len(info) and 1 in directions[1]): directions[1].remove(1)
+            if (info[myPos[1]][myPos[0]] != "z" and myPos[0] != 0 and myPos[0] != len(info[0]) - 1 and myPos[1] != 0 and myPos[1] != len(info) - 1):
+                info[myPos[1]][myPos[0]] = "x"
+            directions = random.choice([[[-1, 1],[0]], [[0],[-1, 1]]])
+            if (myPos[0] < 2 and -1 in directions[0]): directions[0].remove(-1)
+            if (myPos[0] > len(info[0]) - 2 and 1 in directions[0]): directions[0].remove(1)
+
+            if (myPos[1] < 2 and -1 in directions[1]): directions[1].remove(-1)
+            if (myPos[1] > len(info) - 2 and 1 in directions[1]): directions[1].remove(1)
 
             myPos[0] = myPos[0] + random.choice(directions[0])
             myPos[1] = myPos[1] + random.choice(directions[1])
@@ -222,7 +234,7 @@ class Room:
 
         return conditions
     
-    def GenerateMap(self):
+    def GenerateMap(self, player):
         mapFile = self.fileName
         map = self.map
         self.tileList = []
@@ -255,57 +267,39 @@ class Room:
         for t in self.tileList:
             if (t.tileLetter == "x" or t.tileLetter == "z"):
                 self.obstacles.append(ObstaclesScript.Obstacle(t.hitbox[0], t.hitbox[1], t.hitbox[2], t.hitbox[3]))
+        
+        self.enemyGroup = EnemyScripts.enemy_group(self, player)
     
     def CheckDoorCollisions(self, playerHitbox, player):
         self.entranceDoors = self.doors
         
         # For all except first room
 
-        if (self.exitDoor):
-            print(self.exitDoor.entrancePos)
-
         for d in self.doors:
 
             count = 0
-
-            # WORKING ON THIS
-
-            #(pygame.display.get_surface(), (0, 0, 0), d.exitHitbox)
-            #if (self.parentRoom):
-                #pygame.draw.rect(pygame.display.get_surface(), (255, 255, 255), self.exitDoor.entranceHitbox)
-
-            '''if d == self.exitDoor:
-                print("hit")
-                for i in range(len(d.entranceFacing)):
-                    if d.entranceFacing[i] == player.facingDir[i] and d.entranceFacing[i] != 0:
-                        count += 1'''
                         
-            #else:
             for i in range(len(d.entranceFacing)):
                 if d.exitFacing[i] == player.facingDir[i] and d.exitFacing[i] != 0:
                     count += 1
             
             if (count == 0):
                 continue
-                    
-            '''if d == self.exitDoor:
-                if (pygame.Rect.colliderect(d.entranceHitbox, playerHitbox)):
-                    print("hit")
-                    d.TransitionRooms(d.parentRoom)
-                    player.xPos = d.exitPos[0] * 64 + 32
-                    player.yPos = d.exitPos[1] * 64 + 32
-                    return'''
             
             if (pygame.Rect.colliderect(d.exitHitbox, playerHitbox)):
-                d.TransitionRooms(d.childRoom)
+                d.TransitionRooms(d.childRoom, player)
                 player.xPos = d.entrancePos[0] * 64 + 32
                 player.yPos = d.entrancePos[1] * 64 + 32
         
         if (self.exitDoor):
-            print("hit")
             #pygame.draw.rect(pygame.display.get_surface(), (255, 255, 255), self.exitDoor.entranceHitbox)
-            if (pygame.Rect.colliderect(self.exitDoor.entranceHitbox, playerHitbox) and self.exitDoor.entranceFacing == player.facingDir):
-                self.exitDoor.TransitionRooms(self.exitDoor.parentRoom)
+            if (pygame.Rect.colliderect(self.exitDoor.entranceHitbox, playerHitbox)):
+                count = 0
+                for i in range(len(self.exitDoor.entranceFacing)):
+                    if self.exitDoor.entranceFacing[i] == player.facingDir[i] and self.exitDoor.entranceFacing[i] != 0: count += 1
+                if count == 0:
+                    return
+                self.exitDoor.TransitionRooms(self.exitDoor.parentRoom, player)
                 player.xPos = self.exitDoor.exitPos[0] * 64 + 32
                 player.yPos = self.exitDoor.exitPos[1] * 64 + 32
                 
@@ -341,18 +335,24 @@ class Door:
         self.exitFacing = [offset[0], -offset[1]]
         self.entranceFacing = [-offset[0], offset[1]]
 
+        r = None
+
         match offset:
             case (0, 1):
-                r = random.randint(2, self.parentRoom.xLen - 2)
+                while not r or self.parentRoom.info[0][r + 1] == "o" or self.parentRoom.info[0][r - 1] == "o":
+                    r = random.randint(2, self.parentRoom.xLen - 2)
                 return (r, 0)
             case (-1, 0):
-                r = random.randint(2, self.parentRoom.yLen - 2)
+                while not r or self.parentRoom.info[r + 1][0] == "o" or self.parentRoom.info[r - 1][0] == "o":
+                    r = random.randint(2, self.parentRoom.xLen - 2)
                 return (0, r)
             case (1, 0):
-                r = random.randint(2, self.parentRoom.yLen - 2)
+                while not r or self.parentRoom.info[r + 1][self.parentRoom.xLen - 1] == "o" or self.parentRoom.info[r - 1][self.parentRoom.xLen - 1] == "o":
+                    r = random.randint(2, self.parentRoom.yLen - 2)
                 return (self.parentRoom.xLen - 1, r)
             case (0, -1):
-                r = random.randint(2, self.parentRoom.xLen - 2)
+                while not r or self.parentRoom.info[self.parentRoom.yLen - 1][r + 1] == "o" or self.parentRoom.info[self.parentRoom.yLen - 1][r - 1] == "o":
+                    r = random.randint(2, self.parentRoom.xLen - 2)
                 return (r, self.parentRoom.yLen - 1)
     
     def GetEntrancePos(self, exitDoorPos):
@@ -369,9 +369,9 @@ class Door:
 
         return returnValue
 
-    def TransitionRooms(self, nextRoom):
+    def TransitionRooms(self, nextRoom, player):
         self.map.currentRoom = nextRoom
-        self.map.currentRoom.GenerateMap()
+        self.map.currentRoom.GenerateMap(player)
         
 
     
@@ -413,6 +413,8 @@ class Tile:
             tileType = "borderTiles"
 
             myTile = self.FindTileMatch("borderTiles", conditions)
+
+        # ERROR HERE
 
         tileFile = self.info[tileType][myTile]["fileName"]
 

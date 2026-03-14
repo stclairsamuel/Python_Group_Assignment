@@ -9,6 +9,7 @@ import MapGen2
 import PlayerScript
 import ObstaclesScript
 import PathfindingScript
+import EnemyScripts
 
 pygame.init()
 
@@ -45,7 +46,7 @@ map = MapGen2.Map(mapXSize, mapYSize, 8)
 
 map.MakeNewMap()
 
-map.currentRoom.GenerateMap()
+map.currentRoom.GenerateMap(player)
 
 #room = MapGen.Room()
 
@@ -71,7 +72,6 @@ for t in room.tileList:
         obstacles.append(ObstaclesScript.Obstacle(t.hitbox[0], t.hitbox[1], t.hitbox[2], t.hitbox[3]))
 
 # Set up the display
-
 
 scale = 1
 
@@ -234,17 +234,20 @@ while running:
 
     myHitbox = pygame.Rect(player.xPos, player.yPos, player.hitboxSize, player.hitboxSize)
 
-    
-
-    #for d in map.currentRoom.doors:
-        #d.CheckContact(pygame.Rect(player.xPos, player.yPos, player.hitboxSize, player.hitboxSize))
-        #print(d.myPos)
-
-
     # Drawing
     screen.fill(WHITE) # Fill screen with white background
 
     DrawMap()
+
+    obstacleRects = list(o.hitbox for o in map.currentRoom.obstacles)
+
+    for i in map.currentRoom.enemyGroup.activeEnemies:
+        color = RED
+
+        i.FindPathToTarget(pygame.Rect(player.xPos, player.yPos, 15, 15), obstacleRects)
+        i.Move(dt, map.currentRoom)
+
+        pygame.draw.circle(screen, RED, (i.xPos, i.yPos), 10)
 
     #for i in (myAlgo.path):
         #pygame.draw.circle(screen, RED, (32 + i[0] * 64, 32 + i[1] * 64), 20)
@@ -259,21 +262,6 @@ while running:
     pygame.draw.circle(screen, playerColor, [player.xPos, player.yPos], 20)
 
     map.currentRoom.CheckDoorCollisions(myHitbox, player)
-    
-    '''
-    for p in projectiles:
-        pygame.draw.circle(screen, RED, [p.xPos, p.yPos], p.size)
-        p.Move()
-    
-    for p in projectiles:
-        p.lifeTimer -= dt
-        outOfBounds = (not (0 < xPos and xPos < SCREEN_WIDTH) or not (0 < yPos and yPos < SCREEN_HEIGHT))
-        if (p.lifeTimer <= 0 or outOfBounds):
-            projectiles.remove(p)
-    
-        if (p.CheckCollision() and iFrameTimer == 0):
-            TakeDamage()
-    '''
     
     # Timers
     Timers()

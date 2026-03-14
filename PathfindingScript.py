@@ -1,6 +1,7 @@
 import json
 import pygame
 import numpy as np
+import PlayerScript
 
 class AStarMap:
     def __init__(self, info, startPos, endPos):
@@ -73,7 +74,39 @@ class AStarTile:
         self.fValue = self.gValue + self.hValue
 
         self.parent = myParent
+
+class Raycast:
+    def __init__(self, startPos, endPos, target, obstacles):
+        stepDist = 1
+
+        self.hit = False
+
+        self.myPos = self.startPos = list(startPos)
+        self.endPos = endPos
+
+        dir = PlayerScript.NormalizeVector((self.endPos[0] - self.startPos[0], self.endPos[1] - self.startPos[1]))
+        
+        self.hitbox = pygame.Rect(self.myPos[0] - 1, self.myPos[1] - 1, 2, 2)
+
+        step = 0
+
+        while step < 800 and self.hit == False:
+            if pygame.Rect.colliderect(self.hitbox, target):
+                self.hit = True
+                return
+            for o in obstacles:
+                if (self.hitbox.colliderect(o)):
+                    self.hit = False
+                    return
             
+            self.myPos[0] += dir[0] * stepDist
+            self.myPos[1] += dir[1] * stepDist
+
+            self.hitbox = pygame.Rect(self.myPos[0] - 1, self.myPos[1] - 1, 2, 2)
+
+            step += 1
+
+            #pygame.draw.rect(pygame.display.get_surface(), (255, 255, 255), self.hitbox)
 
 
 myAlgo = AStarMap("RandomMap", [2, 2], [10, 8])

@@ -605,6 +605,42 @@
                 -1, 1,
                 -1, -1, 0
             ]
+        },
+
+        "borderTile13" : {
+            "fileName" : "PygameBorderTiles-Sheet14",
+            "restrictions" : [
+                1, 1, 1,
+                -1, -1,
+                0, -1, 0
+            ]
+        },
+
+        "borderTile14" : {
+            "fileName" : "PygameBorderTiles-Sheet15",
+            "restrictions" : [
+                1, -1, 0,
+                1, -1,
+                1, -1, 0
+            ]
+        },
+
+        "borderTile15" : {
+            "fileName" : "PygameBorderTiles-Sheet16",
+            "restrictions" : [
+                0, -1, 0,
+                -1, -1,
+                1, 1, 1
+            ]
+        },
+
+        "borderTile16" : {
+            "fileName" : "PygameBorderTiles-Sheet17",
+            "restrictions" : [
+                0, -1, 1,
+                -1, 1,
+                0, -1, 1
+            ]
         }
     }
 
