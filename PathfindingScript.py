@@ -90,9 +90,12 @@ class Raycast:
 
         step = 0
 
+        self.distance = 0
+
         while step < 800 and self.hit == False:
             if pygame.Rect.colliderect(self.hitbox, target):
                 self.hit = True
+                self.distance = step
                 return
             for o in obstacles:
                 if (self.hitbox.colliderect(o)):

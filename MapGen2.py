@@ -128,6 +128,8 @@ class Room:
         self.wallsPerRoom = 9
 
         self.tileList = []
+        
+        self.activeEnemyProjectiles = []
 
         with open("TileSetStuffs/TileHandling.json", "r") as tileSheetFile:
             self.tiles = json.load(tileSheetFile)
@@ -269,6 +271,7 @@ class Room:
                 self.obstacles.append(ObstaclesScript.Obstacle(t.hitbox[0], t.hitbox[1], t.hitbox[2], t.hitbox[3]))
         
         self.enemyGroup = EnemyScripts.enemy_group(self, player)
+        self.activeEnemydProjectiles = []
     
     def CheckDoorCollisions(self, playerHitbox, player):
         self.entranceDoors = self.doors

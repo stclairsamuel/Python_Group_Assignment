@@ -10,6 +10,9 @@ import PlayerScript
 import ObstaclesScript
 import PathfindingScript
 import EnemyScripts
+import ProjectileScript
+import pynput
+from pynput import mouse
 
 pygame.init()
 
@@ -19,6 +22,17 @@ keycodes = {
     "left": pygame.K_a,
     "right": pygame.K_d
 }
+'''
+def on_click(x, y, button, pressed):
+    """Called when a mouse button is clicked."""
+    if pressed:
+        print(f'{button} pressed at ({x}, {y})')
+    else:
+        print(f'{button} released at ({x}, {y})')
+
+listener = mouse.Listener(on_click=on_click)
+listener.start()
+'''
 
 maxHealth = currentHealth = 5
 
@@ -162,27 +176,7 @@ def SpawnProjectile():
 
     projectiles.append(newProjectile)
 
-def CreateHealthBar():
-    global currentHealth
 
-    imagePath = os.path.join("Images", "PygameHeart.png")
-
-    heartImage = pygame.image.load(imagePath).convert_alpha()
-
-    scale = 2
-    width = heartImage.get_width()
-    height = heartImage.get_height()
-
-    pygame.draw.rect(screen, WHITE, (30, 35, 210, 40))
-
-    biggerHeart = pygame.transform.scale(heartImage, (width * scale, height * scale)).convert_alpha()
-
-    horizontalDistance = 40
-
-    position1 = [40, 40]
-
-    for i in range(currentHealth):
-        screen.blit(biggerHeart, (position1[0] + (i * horizontalDistance), position1[1]))
 
 
 def Timers():
@@ -218,12 +212,17 @@ def DrawMap():
 # Game Running
 
 while running:
-
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+        
+        if (event.type == pygame.MOUSEBUTTONDOWN):
+            if (event.button == 1):
+                player.Attack()
     
     dt = clock.tick(60) / 1000.0
+
+    
 
     player.getInput = not player.isDashing
 
@@ -246,8 +245,17 @@ while running:
 
         i.FindPathToTarget(pygame.Rect(player.xPos, player.yPos, 15, 15), obstacleRects)
         i.Move(dt, map.currentRoom)
+        i.Timers(dt)
 
-        pygame.draw.circle(screen, RED, (i.xPos, i.yPos), 10)
+        pygame.draw.circle(screen, i.color, (i.xPos, i.yPos), 20)
+    
+    for p in map.currentRoom.activeEnemyProjectiles:
+        color = BLACK
+
+        p.Move(dt)
+        p.CheckHit()
+
+        pygame.draw.circle(screen, BLACK, (p.xPos, p.yPos), 5)
 
     #for i in (myAlgo.path):
         #pygame.draw.circle(screen, RED, (32 + i[0] * 64, 32 + i[1] * 64), 20)
@@ -263,10 +271,25 @@ while running:
 
     map.currentRoom.CheckDoorCollisions(myHitbox, player)
     
-    # Timers
+    for a in player.activeAttacks:
+        a.Update(dt)
+
+        myPoly = PlayerScript.PointsToLines(a.hitboxPoints)
+
+        hitboxes = [pygame.Rect(p.xPos - p.hitboxSize/2, p.yPos - p.hitboxSize/2, p.hitboxSize, p.hitboxSize) for p in map.currentRoom.enemyGroup.activeEnemies]
+
+        if (PlayerScript.CheckPolygonCollisions(myPoly, hitboxes)):
+            hitEnemy = next(iter(e for e in map.currentRoom.enemyGroup.activeEnemies if pygame.Rect(e.xPos - e.hitboxSize/2, e.yPos - e.hitboxSize/2, e.hitboxSize, e.hitboxSize) == PlayerScript.CheckPolygonCollisions(myPoly, hitboxes)), None)
+
+            knockbackVector = (math.cos(math.radians(a.rotation)), -math.sin(math.radians(a.rotation)))
+
+            hitEnemy.TakeDamage(1, knockbackVector, a.knockback)
+            
+    
+    #
     Timers()
 
-    CreateHealthBar()
+    player.CreateHealthBar()
 
     # Update the display
     pygame.display.update()
