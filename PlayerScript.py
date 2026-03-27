@@ -44,10 +44,16 @@ def CheckPolygonCollisions(pLines, rects):
 class Player:
     def __init__(self, startX, startY):
         #Constants
-        self.acceleration = 4000
+        self.acceleration = 3000
         self.maxSpeed = 400
         self.speed = 0
         self.dashSpeed = 800
+
+        self.attackLength = 30
+        self.attackHeight = 40
+
+        self.mapWidth = startX * 2
+        self.mapHeight = startY * 2
 
         self.currentHealth = self.maxHealth = 5
 
@@ -69,7 +75,7 @@ class Player:
 
         self.isDashing = False
 
-        self.dashTime = 0.2
+        self.dashTime = 0.1
         self.dashTimer = 0
 
         self.dashDir = [0, 0]
@@ -77,16 +83,13 @@ class Player:
         self.dashCdTime = 0.2
         self.dashCdTimer = 0
 
-        self.maxSpeed = 400
-        self.acceleration = 3000
-
         self.drag = 0.97
 
         self.movingInto = [0, 0]
 
         self.activeAttacks = []
 
-        
+        self.upgradesTracker = None
     
     def GetInput(self):
         xInput = 0
@@ -161,6 +164,19 @@ class Player:
         nextPos = [self.xPos + (self.xVel * dt), self.yPos + (self.yVel * dt)]
 
         self.CheckObstacles(nextPos, obstacles, dt)
+        
+        if (nextPos[0] < self.hitboxSize / 2):
+            self.xPos = self.hitboxSize / 2
+            self.xVel = 0
+        if (nextPos[0] > self.mapWidth - self.hitboxSize / 2):
+            self.xPos = self.mapWidth - self.hitboxSize / 2
+            self.xVel = 0
+        if (nextPos[1] < self.hitboxSize / 2):
+            self.yPos = self.hitboxSize / 2
+            self.yVel = 0
+        if (nextPos[1] > self.mapHeight - self.hitboxSize / 2):
+            self.yPos = self.mapHeight - self.hitboxSize / 2
+            self.yVel = 0
 
         wallCheckDist = 2
         left = self.xPos - self.hitboxSize/2
@@ -194,7 +210,11 @@ class Player:
 
         angle = math.atan2(- dirToMouse[1], dirToMouse[0])
 
-        print(math.degrees(angle))
+        #angle = math.atan2(- self.facingDir[1], self.facingDir[0])
+
+        if (not self.isDashing):
+            self.xVel += math.cos(angle) * 800
+            self.yVel -= math.sin(angle) * 800
 
         newAttack = PlayerAttack(math.degrees(angle), self)
         self.activeAttacks.append(newAttack)
@@ -207,6 +227,11 @@ class Player:
             self.xVel = dashVector[0] * self.dashSpeed
         if (self.facingDir[1]):
             self.yVel = dashVector[1] * self.dashSpeed
+        
+        if (self.upgradesTracker):
+            if ("sharp_scarf" in self.upgradesTracker.heldUpgrades):
+                self.upgradesTracker.scarfPrimed = True
+                self.upgradesTracker.sharpScarfTimer = self.upgradesTracker.sharpScarfTime
     
     def StopDash(self):
         self.dashCdTimer = self.dashCdTime
@@ -225,6 +250,11 @@ class Player:
     def TakeDamage(self, damageAmt):
         if (self.isDashing):
             return
+    
+        if (self.upgradesTracker):
+            if (self.upgradesTracker.shield > 0):
+                self.upgradesTracker.shield -= 1
+                return
 
         self.currentHealth -= damageAmt
 
@@ -243,11 +273,11 @@ class Player:
         screen = pygame.display.get_surface()
         WHITE = (255, 255, 255)
 
-        pygame.draw.rect(screen, WHITE, (30, 35, 210, 40))
+        horizontalDistance = 40
+
+        pygame.draw.rect(screen, WHITE, (30, 35, ((10 + scale * width) * self.maxHealth), 40))
 
         biggerHeart = pygame.transform.scale(heartImage, (width * scale, height * scale)).convert_alpha()
-
-        horizontalDistance = 40
 
         position1 = [40, 40]
 
@@ -256,10 +286,12 @@ class Player:
             
 class PlayerAttack:
     def __init__(self, rotation, player):
-        self.hitboxLength = 40
-        self.hitboxHeight = 20
-        self.distanceFromPlayer = 30
+        self.hitboxLength = player.attackLength
+        self.hitboxHeight = player.attackHeight
+        self.distanceFromPlayer = 40
         self.sizeScale = 4
+
+        self.hitEnemies = []
 
         self.rotation = rotation
 
@@ -284,20 +316,23 @@ class PlayerAttack:
 
         d = self.distanceFromPlayer
         cosA = math.cos(math.radians(rotation))
-        sinA = math.sin(math.radians(rotation))
+        sinA = -math.sin(math.radians(rotation))
 
         self.xPos = player.xPos + cosA * d
-        self.yPos = player.yPos - sinA * d
+        self.yPos = player.yPos + sinA * d
 
         w = self.hitboxLength
         h = self.hitboxHeight
 
+        x = self.xPos
+        y = self.yPos
+
         self.hitboxPoints = [
-            (self.xPos + ((cosA * d) + (sinA * h)), self.yPos - ((sinA * d) - (cosA * h))),
-            (self.xPos + ((cosA * d) - (sinA * h)), self.yPos - ((sinA * d) + (cosA * h))),
-            (self.xPos + ((cosA * d) - (sinA * h) - (cosA * w)), self.yPos - ((sinA * d) + (cosA * h) - (sinA * w))),
-            (self.xPos + ((cosA * d) + (sinA * h) - (cosA * w)), self.yPos - ((sinA * d) - (cosA * h) - (sinA * w))),
-            (self.xPos + ((cosA * d) + (sinA * h)), self.yPos - ((sinA * d) - (cosA * h)))
+            (x - (sinA * w), y + (cosA * w)),
+            (x + (sinA * w), y - (cosA * w)),
+            (x + (sinA * w) + (cosA * h), y - (cosA * w) + (sinA * h)),
+            (x - (sinA * w) + (cosA * h), y + (cosA * w) + (sinA * h)),
+            (x - (sinA * w), y + (cosA * w))
         ]
     
     def Update(self, dt):
@@ -322,3 +357,11 @@ class PlayerAttack:
                 pygame.draw.line(pygame.display.get_surface(), (255, 255, 255), *l)
         except:
             pass
+    
+    def GetDamage(self):
+        damage = 1
+        if (self.player.upgradesTracker.scarfPrimed):
+            damage *= 1.5
+            self.player.upgradesTracker.scarfPrimed = False
+
+        return damage

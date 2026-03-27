@@ -9,6 +9,7 @@ import PathfindingScript
 import ObstaclesScript
 import copy
 import EnemyScripts
+import UpgradesScript
 
 class Map:
     def __init__(self, maxLength, maxHeight, numOfRooms):
@@ -28,6 +29,8 @@ class Map:
         self.rooms = []
 
         self.currentRoom = None
+
+        self.upgradesTracker = None
     
     def MakeNewMap(self):
         for y in range(self.maxHeight):
@@ -130,9 +133,14 @@ class Room:
         self.tileList = []
         
         self.activeEnemyProjectiles = []
+        self.enemyGroup = None
+
+        self.spawnedUpgrades = []
 
         with open("TileSetStuffs/TileHandling.json", "r") as tileSheetFile:
             self.tiles = json.load(tileSheetFile)
+        
+        self.roomCleared = False
     
     def MakeEmptyRoom(self):
         self.info = [["o" for _ in range(self.xLen)] for _ in range(self.yLen)]
@@ -269,11 +277,13 @@ class Room:
         for t in self.tileList:
             if (t.tileLetter == "x" or t.tileLetter == "z"):
                 self.obstacles.append(ObstaclesScript.Obstacle(t.hitbox[0], t.hitbox[1], t.hitbox[2], t.hitbox[3]))
+            
         
         self.enemyGroup = EnemyScripts.enemy_group(self, player)
         self.activeEnemydProjectiles = []
     
     def CheckDoorCollisions(self, playerHitbox, player):
+
         self.entranceDoors = self.doors
         
         # For all except first room
@@ -305,7 +315,15 @@ class Room:
                 self.exitDoor.TransitionRooms(self.exitDoor.parentRoom, player)
                 player.xPos = self.exitDoor.exitPos[0] * 64 + 32
                 player.yPos = self.exitDoor.exitPos[1] * 64 + 32
-                
+    
+    def ClearRoom(self):
+        self.roomCleared = True
+
+        if (self.map.upgradesTracker):
+            self.map.upgradesTracker.SpawnUpgrade(self)
+
+
+        
     
     
             
@@ -375,6 +393,10 @@ class Door:
     def TransitionRooms(self, nextRoom, player):
         self.map.currentRoom = nextRoom
         self.map.currentRoom.GenerateMap(player)
+
+        if (self.map.upgradesTracker):
+            if ("floating_shield" in self.map.upgradesTracker.heldUpgrades):
+                self.map.upgradesTracker.shield = 1
         
 
     

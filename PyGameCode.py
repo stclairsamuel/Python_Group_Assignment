@@ -13,6 +13,7 @@ import EnemyScripts
 import ProjectileScript
 import pynput
 from pynput import mouse
+import UpgradesScript
 
 pygame.init()
 
@@ -57,6 +58,12 @@ mapYSize = 6
 startRoom = (0, 3)
 
 map = MapGen2.Map(mapXSize, mapYSize, 8)
+
+newUpgradeTracker = UpgradesScript.upgrade_tracker(player)
+
+map.upgradesTracker = newUpgradeTracker
+player.upgradesTracker = newUpgradeTracker
+
 
 map.MakeNewMap()
 
@@ -108,6 +115,8 @@ spawnProjTime = 1
 spawnProjTimer = 0
 
 projSize = 10
+
+ts = 0
 
 def ReflectVector(vectorToReflect, normal):
     # R = V - 2(V DOT N)N
@@ -211,6 +220,11 @@ def DrawMap():
 
 # Game Running
 
+def StopTime(timeStop):
+    global ts
+    ts = timeStop
+
+
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -221,6 +235,12 @@ while running:
                 player.Attack()
     
     dt = clock.tick(60) / 1000.0
+
+    if (ts > 0):
+        ts -= dt
+        continue
+    else:
+        ts = 0
 
     
 
@@ -269,7 +289,12 @@ while running:
 
     pygame.draw.circle(screen, playerColor, [player.xPos, player.yPos], 20)
 
-    map.currentRoom.CheckDoorCollisions(myHitbox, player)
+    if (map.currentRoom.enemyGroup):
+        if (len(map.currentRoom.enemyGroup.activeEnemies) == 0 and not map.currentRoom.roomCleared):
+            map.currentRoom.ClearRoom()
+    
+    if (map.currentRoom.roomCleared):
+        map.currentRoom.CheckDoorCollisions(myHitbox, player)
     
     for a in player.activeAttacks:
         a.Update(dt)
@@ -277,13 +302,22 @@ while running:
         myPoly = PlayerScript.PointsToLines(a.hitboxPoints)
 
         hitboxes = [pygame.Rect(p.xPos - p.hitboxSize/2, p.yPos - p.hitboxSize/2, p.hitboxSize, p.hitboxSize) for p in map.currentRoom.enemyGroup.activeEnemies]
-
+        
         if (PlayerScript.CheckPolygonCollisions(myPoly, hitboxes)):
             hitEnemy = next(iter(e for e in map.currentRoom.enemyGroup.activeEnemies if pygame.Rect(e.xPos - e.hitboxSize/2, e.yPos - e.hitboxSize/2, e.hitboxSize, e.hitboxSize) == PlayerScript.CheckPolygonCollisions(myPoly, hitboxes)), None)
 
-            knockbackVector = (math.cos(math.radians(a.rotation)), -math.sin(math.radians(a.rotation)))
+            if (hitEnemy not in a.hitEnemies):
+                knockbackVector = (math.cos(math.radians(a.rotation)), -math.sin(math.radians(a.rotation)))
 
-            hitEnemy.TakeDamage(1, knockbackVector, a.knockback)
+                StopTime(0.05)
+                damage = a.GetDamage()
+                hitEnemy.TakeDamage(damage, knockbackVector, a.knockback)
+
+                a.hitEnemies.append(hitEnemy)
+    
+    map.upgradesTracker.Update(map.currentRoom, dt)
+    for u in map.currentRoom.spawnedUpgrades:
+        u.CheckPickup(player)
             
     
     #
