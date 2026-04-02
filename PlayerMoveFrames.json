@@ -1,0 +1,71 @@
+{
+    "idle" : [
+        "Idle_1",
+        "Idle_2"
+    ],
+
+    "walking_animations" : {
+
+        "move_up" : [
+            "Walking_Forward_1",
+            "Walking_Forward_2"
+        ],
+
+        "move_left" : [
+            "Walking_Left_1",
+            "Walking_Left_2"
+        ],
+
+        "move_right" : [
+            "Walking_Right_1",
+            "walking_Right_2"
+        ],
+
+        "move_down" : [
+            "Walking_Backward_1",
+            "Walking_Backward_2"
+        ]
+    },
+
+    "dashing_animations" : {
+        "dash_up" : [
+            "Dashing_Forward_1",
+            "Dashing_Forward_2",
+            "Dashing_Forward_3",
+            "Dashing_Forward_4",
+            "Dashing_Forward_5",
+            "Dashing_Forward_6",
+            "Dashing_Forward_7"
+        ],
+
+        "dash_left" : [
+            "Dashing_Left_1",
+            "Dashing_Left_2",
+            "Dashing_Left_3",
+            "Dashing_Left_4",
+            "Dashing_Left_5",
+            "Dashing_Left_6",
+            "Dashing_Left_7"
+        ],
+
+        "dash_right" : [
+            "Dashing_Right_1",
+            "Dashing_Right_2",
+            "Dashing_Right_3",
+            "Dashing_Right_4",
+            "Dashing_Right_5",
+            "Dashing_Right_6",
+            "Dashing_Right_7"
+        ],
+
+        "dash_down" : [
+            "Dashing_Backward_1",
+            "Dashing_Backward_2",
+            "Dashing_Backward_3",
+            "Dashing_Backward_4",
+            "Dashing_Backward_5",
+            "Dashing_Backward_6",
+            "Dashing_Backward_7"
+        ]
+    }
+}
