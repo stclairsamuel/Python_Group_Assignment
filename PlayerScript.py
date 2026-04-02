@@ -47,7 +47,7 @@ class Player:
         self.acceleration = 3000
         self.maxSpeed = 400
         self.speed = 0
-        self.dashSpeed = 800
+        self.dashSpeed = 600
 
         self.attackLength = 30
         self.attackHeight = 40
@@ -75,7 +75,7 @@ class Player:
 
         self.isDashing = False
 
-        self.dashTime = 0.1
+        self.dashTime = 0.2
         self.dashTimer = 0
 
         self.dashDir = [0, 0]
@@ -90,6 +90,14 @@ class Player:
         self.activeAttacks = []
 
         self.upgradesTracker = None
+
+        self.animator = PlayerAnimator()
+        self.animator.player = self
+
+        self.mostRecentAtk = None
+
+        self.attackCdTime = 0.2
+        self.attackCdTimer = 0
     
     def GetInput(self):
         xInput = 0
@@ -118,6 +126,8 @@ class Player:
         
         self.xInput = xInput
         self.yInput = yInput
+
+        
             
         if (inpList[pygame.K_LSHIFT] and not self.dashCdTimer > 0):
             self.StartDash()
@@ -203,6 +213,8 @@ class Player:
         self.yPos += self.yVel * dt
 
     def Attack(self):
+        if (self.attackCdTimer > 0):
+            return
         mousePos = pygame.mouse.get_pos()
         myPos = (self.xPos, self.yPos)
 
@@ -217,7 +229,10 @@ class Player:
             self.yVel -= math.sin(angle) * 800
 
         newAttack = PlayerAttack(math.degrees(angle), self)
+        self.mostRecentAtk = newAttack
         self.activeAttacks.append(newAttack)
+
+        self.attackCdTimer = self.attackCdTime
     
     def StartDash(self):
         self.dashTimer = self.dashTime
@@ -283,13 +298,116 @@ class Player:
 
         for i in range(self.currentHealth):
             screen.blit(biggerHeart, (position1[0] + (i * horizontalDistance), position1[1]))
+
+class PlayerAnimator:
+    def __init__(self):
+        self.animationTimer = 0
+
+        self.currentAnimationTime = 1
+
+        self.currentAnimation = "idle"
+        
+        self.idleAnimationTime = 0.5
+        self.walkAnimationTime = 0.5
+        self.dashAnimationTime = 0.2
+
+        self.player = None
+
+        with open("PlayerMoveFrames.json", "r") as file:
+            self.fileContents = json.load(file)
+
+    def Update(self, dt):
+        if (not self.player):
+            return
+
+        self.Timers(dt)
+
+        lastAnimation = self.currentAnimation
+
+        xInput = self.player.xInput
+        yInput = self.player.yInput
+
+        playerInput = xInput or yInput
+
+        moveDir = [xInput, yInput]
+
+        if (len(self.player.activeAttacks) > 0):
+            atk = self.player.activeAttacks[0]
+
+            if (math.cos(math.radians(atk.rotation)) > 0):
+                moveDir[0] = 1
+            else:
+                moveDir[0] = -1
+        
+        if (self.player.isDashing):
+            moveDir = self.player.facingDir
+
+        if (not self.player.isDashing):
+            match moveDir[0]:
+                case -1 : self.currentAnimation = "move_left"
+                case 1 : self.currentAnimation = "move_right"
+                case 0 : 
+                    match moveDir[1]:
+                        case 1 : self.currentAnimation = "move_up"
+                        case -1 : self.currentAnimation = "move_down"
+                        case 0 : self.currentAnimation = "idle"
+        else:
+            match moveDir[0]:
+                case -1 : self.currentAnimation = "dash_left"
+                case 1 : self.currentAnimation = "dash_right"
+                case 0 : 
+                    match moveDir[1]:
+                        case 1 : self.currentAnimation = "dash_up"
+                        case -1 : self.currentAnimation = "dash_down"
+    
+        wasWalking = lastAnimation in self.fileContents["walking_animations"].keys()
+        isWalking = self.currentAnimation in self.fileContents["walking_animations"].keys()
+
+        wasDashing = lastAnimation in self.fileContents["dashing_animations"].keys()
+        isDashing = self.currentAnimation in self.fileContents["dashing_animations"].keys()
+
+
+        
+        if (wasWalking and not isWalking or wasDashing and not isDashing):
+            self.animationTimer = self.currentAnimationTime = self.idleAnimationTime
+        if (isWalking and not wasWalking):
+            self.animationTimer = self.currentAnimationTime = self.walkAnimationTime
+        if (isDashing and not wasDashing):
+            self.animationTimer = self.currentAnimationTime = self.dashAnimationTime
+
+        if (self.currentAnimation in self.fileContents["walking_animations"].keys()):
+            animationList = self.fileContents["walking_animations"][self.currentAnimation]
+        elif (self.currentAnimation in self.fileContents["dashing_animations"].keys()):
+            animationList = self.fileContents["dashing_animations"][self.currentAnimation]
+        else:
+            animationList = self.fileContents[self.currentAnimation]
+        
+        timePerFrame = self.currentAnimationTime / len(animationList)
+
+        currentFrameInt = int(self.animationTimer / timePerFrame)
+
+        currentFrame = str(animationList[currentFrameInt - 1])
+
+        with open(f'Images/PlayerAnimFrames/PlayerMoveFrames/{currentFrame}.png') as frame:
+            image = pygame.image.load(frame).convert_alpha()
+            width = image.get_width()
+            height = image.get_height()
+            scale = 1.5
+            scaledImage = pygame.transform.scale(image, (width * scale, height * scale)).convert_alpha()
+            pygame.Surface.blit(pygame.display.get_surface(), scaledImage, (self.player.xPos - (width * scale) / 2, self.player.yPos - (width * scale) / 2 - 10))
+    
+    def Timers(self, dt):
+        self.animationTimer += dt
+        if self.animationTimer >= self.currentAnimationTime:
+            self.animationTimer = 0
+
             
 class PlayerAttack:
     def __init__(self, rotation, player):
         self.hitboxLength = player.attackLength
         self.hitboxHeight = player.attackHeight
         self.distanceFromPlayer = 40
-        self.sizeScale = 4
+        self.sizeScale = 3
 
         self.hitEnemies = []
 
@@ -304,7 +422,7 @@ class PlayerAttack:
 
         self.editedFrames = []
         for i in range(len(self.frames)):
-            newImage = pygame.image.load("Images/PlayerAttackFrames/" + self.frames[i]).convert_alpha()
+            newImage = pygame.image.load("Images/PlayerAnimFrames/PlayerAttackFrames/" + self.frames[i]).convert_alpha()
             newFrame = pygame.transform.rotozoom(newImage, rotation, self.sizeScale).convert_alpha()
             self.editedFrames.insert(0, newFrame)
         
@@ -332,7 +450,10 @@ class PlayerAttack:
             (x + (sinA * w), y - (cosA * w)),
             (x + (sinA * w) + (cosA * h), y - (cosA * w) + (sinA * h)),
             (x - (sinA * w) + (cosA * h), y + (cosA * w) + (sinA * h)),
-            (x - (sinA * w), y + (cosA * w))
+            (x - (sinA * w), y + (cosA * w)),
+            (x + (sinA * w) + (cosA * h), y - (cosA * w) + (sinA * h)),
+            (x + (sinA * w), y - (cosA * w)),
+            (x - (sinA * w) + (cosA * h), y + (cosA * w) + (sinA * h)),
         ]
     
     def Update(self, dt):
@@ -353,8 +474,8 @@ class PlayerAttack:
         try:
             myPoly = PointsToLines(self.hitboxPoints)
 
-            for l in myPoly:
-                pygame.draw.line(pygame.display.get_surface(), (255, 255, 255), *l)
+            #for l in myPoly:
+                #pygame.draw.line(pygame.display.get_surface(), (255, 255, 255), *l)
         except:
             pass
     

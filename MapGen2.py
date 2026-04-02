@@ -31,6 +31,8 @@ class Map:
         self.currentRoom = None
 
         self.upgradesTracker = None
+
+        self.finalRoom = None
     
     def MakeNewMap(self):
         for y in range(self.maxHeight):
@@ -43,7 +45,12 @@ class Map:
         lastRoom = None
 
         for r in range(self.numOfRooms):
-            newRoom = Room(self, currentPos, lastRoom)
+            print(r == self.numOfRooms - 1)
+            if (r == self.numOfRooms - 1):
+                newRoom = Room(self, currentPos, lastRoom, "BossMap")
+            else:
+                newRoom = Room(self, currentPos, lastRoom)
+
             self.rooms.append(newRoom)
 
             self.info[currentPos[1]][currentPos[0]] = f'x{r}'
@@ -54,9 +61,11 @@ class Map:
 
             lastRoom = newRoom
         
+        self.finalRoom = self.rooms[-1]
+        
         for i in range(3):
             self.AddSideRooms()
-        
+
         self.currentRoom = self.rooms[0]
 
         # Map Layout Locked In
@@ -71,7 +80,8 @@ class Map:
         # Doors Locked In
 
         for r in (self.rooms):
-            r.MakeObstacles()
+            if (r != self.finalRoom):
+                r.MakeObstacles()
     
     def AddSideRooms(self):
         roomchance = 3
@@ -91,7 +101,7 @@ class Map:
                      (currentPos[0], currentPos[1] + 1)]
     
         for p in positionsToCheck:
-            if (p[0] < 0 or p[1] < 0 or p[0] > self.maxLength - 1 or p[1] > self.maxHeight - 1):
+            if (p[0] <= 0 or p[1] <= 0 or p[0] >= self.maxLength - 1 or p[1] >= self.maxHeight - 1):
                 positionsToCheck.remove(p)
                 continue
             for r in self.rooms:
@@ -108,7 +118,7 @@ class Map:
 
 
 class Room:
-    def __init__(self, map, mapPos, parentRoom):
+    def __init__(self, map, mapPos, parentRoom, overrideFile = None):
         self.xLen = 14
         self.yLen = 10
 
@@ -119,9 +129,14 @@ class Room:
 
         self.info = []
 
-        self.fileName = f'RandomMap{self.mapPos}'
+        if (overrideFile):
+            self.fileName = overrideFile
 
-        self.MakeEmptyRoom()
+            self.GetPremadeRoom(overrideFile)
+        else:
+            self.fileName = f'RandomMap{self.mapPos}'
+
+            self.MakeEmptyRoom()
 
         self.doors = []
         self.exitDoor = None
@@ -141,6 +156,12 @@ class Room:
             self.tiles = json.load(tileSheetFile)
         
         self.roomCleared = False
+
+    def GetPremadeRoom(self, overrideFile):
+        with open(f'MapFiles/{overrideFile}.json', 'r') as file:
+            contents = json.load(file)
+
+        self.info = contents
     
     def MakeEmptyRoom(self):
         self.info = [["o" for _ in range(self.xLen)] for _ in range(self.yLen)]
@@ -245,6 +266,9 @@ class Room:
         return conditions
     
     def GenerateMap(self, player):
+
+        print(self.fileName)
+
         mapFile = self.fileName
         map = self.map
         self.tileList = []
@@ -321,6 +345,11 @@ class Room:
 
         if (self.map.upgradesTracker):
             self.map.upgradesTracker.SpawnUpgrade(self)
+
+        if (self.map.currentRoom == self.map.finalRoom):
+            pygame.quit()
+
+        
 
 
         

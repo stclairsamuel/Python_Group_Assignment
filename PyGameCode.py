@@ -57,7 +57,7 @@ mapYSize = 6
 
 startRoom = (0, 3)
 
-map = MapGen2.Map(mapXSize, mapYSize, 8)
+map = MapGen2.Map(mapXSize, mapYSize, 5)
 
 newUpgradeTracker = UpgradesScript.upgrade_tracker(player)
 
@@ -200,6 +200,11 @@ def Timers():
         player.dashTimer -= dt
     else:
         player.dashTimer = 0
+    
+    if (player.attackCdTimer > 0):
+        player.attackCdTimer -= dt
+    else:
+        player.attackCdTimer = 0
 
     if (spawnProjTimer > 0):
         spawnProjTimer -= dt
@@ -287,7 +292,9 @@ while running:
     else:
         playerColor = GREEN
 
-    pygame.draw.circle(screen, playerColor, [player.xPos, player.yPos], 20)
+    #(screen, playerColor, [player.xPos, player.yPos], 20)
+
+    player.animator.Update(dt)
 
     if (map.currentRoom.enemyGroup):
         if (len(map.currentRoom.enemyGroup.activeEnemies) == 0 and not map.currentRoom.roomCleared):
