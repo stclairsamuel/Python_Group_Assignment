@@ -227,10 +227,10 @@ class enemy:
         if (predictedXHitbox.left < 0):
             self.xPos = self.hitboxSize/2 + skinWidth
             self.xVel = 0
-        if (predictedYHitbox.right > mapSize[1]):
+        if (predictedYHitbox.bottom > mapSize[1]):
             self.yPos = mapSize[1] - self.hitboxSize/2 - skinWidth
             self.yVel = 0
-        if (predictedYHitbox.left < 0):
+        if (predictedYHitbox.top < 0):
             self.yPos = self.hitboxSize/2 + skinWidth
             self.yVel = 0
         
