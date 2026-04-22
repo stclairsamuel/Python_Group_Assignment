@@ -57,7 +57,7 @@ mapYSize = 6
 
 startRoom = (0, 3)
 
-map = MapGen2.Map(mapXSize, mapYSize, 5)
+map = MapGen2.Map(mapXSize, mapYSize, 2)
 
 newUpgradeTracker = UpgradesScript.upgrade_tracker(player)
 
@@ -147,7 +147,7 @@ class Projectile:
 
         self.size = 10
 
-        self.acceleration = 300
+        acceleration = 300
 
         self.drag = 0.9
 
@@ -229,6 +229,7 @@ def StopTime(timeStop):
     global ts
     ts = timeStop
 
+pygame.event.set_grab(True)
 
 while running:
     for event in pygame.event.get():
@@ -268,11 +269,12 @@ while running:
     for i in map.currentRoom.enemyGroup.activeEnemies:
         color = RED
 
-        i.FindPathToTarget(pygame.Rect(player.xPos, player.yPos, 15, 15), obstacleRects)
-        i.Move(dt, map.currentRoom)
-        i.Timers(dt)
+        i.Update(dt)
 
-        pygame.draw.circle(screen, i.color, (i.xPos, i.yPos), 20)
+        #pygame.draw.circle(screen, i.color, (i.xPos, i.yPos), 20)
+
+    map.currentRoom.enemyGroup.DrawEnemies(dt)
+        
     
     for p in map.currentRoom.activeEnemyProjectiles:
         color = BLACK
