@@ -14,6 +14,7 @@ import ProjectileScript
 import pynput
 from pynput import mouse
 import UpgradesScript
+import Rendering
 
 pygame.init()
 
@@ -23,19 +24,6 @@ keycodes = {
     "left": pygame.K_a,
     "right": pygame.K_d
 }
-'''
-def on_click(x, y, button, pressed):
-    """Called when a mouse button is clicked."""
-    if pressed:
-        print(f'{button} pressed at ({x}, {y})')
-    else:
-        print(f'{button} released at ({x}, {y})')
-
-listener = mouse.Listener(on_click=on_click)
-listener.start()
-'''
-
-maxHealth = currentHealth = 5
 
 dt = 0
 
@@ -57,7 +45,9 @@ mapYSize = 6
 
 startRoom = (0, 3)
 
-map = MapGen2.Map(mapXSize, mapYSize, 2)
+map = MapGen2.Map(mapXSize, mapYSize, 6)
+
+player.map = map
 
 newUpgradeTracker = UpgradesScript.upgrade_tracker(player)
 
@@ -69,16 +59,10 @@ map.MakeNewMap()
 
 map.currentRoom.GenerateMap(player)
 
-#room = MapGen.Room()
-
-#room.MakeNewRandomMap()
-
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 GREEN = (200, 230, 83)
 RED = (255, 0, 0)
-
-playerColor = GREEN
 
 found_room = next((room for room in map.rooms if room.mapPos == (map.currentRoom.mapPos[0], map.currentRoom.mapPos[1])), None)
 
@@ -131,97 +115,14 @@ def ReflectVector(vectorToReflect, normal):
 
     return reflectedVector
 
-
-class Projectile:
-    def __init__(self):
-
-        if (random.choice([True, False])):
-            self.xPos = random.randint(0, SCREEN_WIDTH)
-            self.yPos = random.choice([0, SCREEN_HEIGHT])
-        else:
-            self.xPos = random.choice([0, SCREEN_WIDTH])
-            self.yPos = random.randint(0, SCREEN_HEIGHT)
-
-        self.xVel = 0
-        self.yVel = 0
-
-        self.size = 10
-
-        acceleration = 300
-
-        self.drag = 0.9
-
-        self.lifeTime = self.lifeTimer = 10
-    
-    def CheckCollision(self):
-        global playerHitbox
-
-        myPos = [self.xPos, self.yPos]
-
-        myHitbox = pygame.Rect(myPos[0], myPos[1], self.size, self.size)
-
-        return (pygame.Rect.colliderect(myHitbox, playerHitbox))
-
 obstacles = []
 for t in room.tileList:
     if (t.tileLetter == "x" or t.tileLetter == "z"):
         obstacles.append(ObstaclesScript.Obstacle(t.hitbox[0], t.hitbox[1], t.hitbox[2], t.hitbox[3]))
 
-def Die():
-    pygame.quit()
-
-def TakeDamage():
-    global iFrameTimer, currentHealth
-
-    currentHealth -= 1
-
-    iFrameTimer = iFrameTime
-
-    if (currentHealth <= 0):
-        Die()
-
-def SpawnProjectile():
-    newProjectile = Projectile()
-
-    projectiles.append(newProjectile)
-
-
-
-
-def Timers():
-    global spawnProjTimer, iFrameTimer
-
-    if (player.dashCdTimer > 0):
-        player.dashCdTimer -= dt
-    else:
-        player.dashCdTimer = 0
-    
-    if (player.dashTimer > 0):
-        player.dashTimer -= dt
-    else:
-        player.dashTimer = 0
-    
-    if (player.attackCdTimer > 0):
-        player.attackCdTimer -= dt
-    else:
-        player.attackCdTimer = 0
-
-    if (spawnProjTimer > 0):
-        spawnProjTimer -= dt
-    else:
-        spawnProjTimer = spawnProjTime
-        SpawnProjectile()
-    
-    if (iFrameTimer > 0):
-        player.iFrameTimer -= dt
-    else:
-        player.iFrameTimer = 0
-
 def DrawMap():
     for t in map.currentRoom.tileList:
-        t.DrawTile(screen)
-    #for d in map.currentRoom.doors:
-    #    pygame.draw.rect(screen, WHITE, d.hitbox)
+        t.Render(screen)
 
 # Game Running
 
@@ -231,6 +132,65 @@ def StopTime(timeStop):
 
 pygame.event.set_grab(True)
 
+class cursor:
+    def __init__(self):
+        self.xPos = 0
+        self.yPos = 0
+
+        self.xOff = 10
+        self.yOff = 10
+
+        self.scale = 0.5
+
+        self.isClick = False
+
+        filePath = "CursorFrames"
+
+        self.spriteRenderer = Rendering.sprite_renderer(self)
+        self.animator = Rendering.animator(filePath, self.spriteRenderer)
+
+        self.spriteRenderer.ChangeSize(self.scale)
+
+        self.sortingLayer = 1
+
+    def Update(self, dt):
+        mousePos = pygame.mouse.get_pos()
+
+        self.xPos, self.yPos = mousePos[0] + self.xOff, mousePos[1] + self.yOff
+    
+    def Click(self):
+        self.animator.SwitchAnimation("click")
+    
+    def Release(self):
+        self.animator.SwitchAnimation("release")
+    
+
+    def Render(self, dt):
+        self.spriteRenderer.Render(dt)
+
+class game_handler:
+    def __init__(self):
+        self.timeStop = 0
+
+        self.cursor = cursor()
+    
+    def StopTime(self, ts):
+        self.timeStop = ts
+    
+    def Timers(self, dt):
+        if (self.timeStop > 0):
+            self.timeStop -= dt
+        else:
+            self.timeStop = 0
+
+map.handler = game_handler()
+
+for r in map.rooms:
+    r.AddGameObject(player)
+    r.AddGameObject(map.handler.cursor)
+
+pygame.mouse.set_visible(False)
+
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -239,42 +199,28 @@ while running:
         if (event.type == pygame.MOUSEBUTTONDOWN):
             if (event.button == 1):
                 player.Attack()
+                map.handler.cursor.Click()
+
+        if (event.type == pygame.MOUSEBUTTONUP):
+            if (event.button == 1):
+                map.handler.cursor.Release()
     
     dt = clock.tick(60) / 1000.0
 
-    if (ts > 0):
-        ts -= dt
-        continue
-    else:
-        ts = 0
+    map.handler.Timers(dt)
 
+    if (map.handler.timeStop > 0):
+        dt = 0
     
-
-    player.getInput = not player.isDashing
-
-    if (player.getInput):
-        player.GetInput()
-    
-    player.Move(dt, map.currentRoom.obstacles)
-
-    myHitbox = pygame.Rect(player.xPos, player.yPos, player.hitboxSize, player.hitboxSize)
-
     # Drawing
     screen.fill(WHITE) # Fill screen with white background
 
     DrawMap()
 
+    map.currentRoom.UpdateObjects(dt)
+    map.currentRoom.RenderObjects(dt)
+
     obstacleRects = list(o.hitbox for o in map.currentRoom.obstacles)
-
-    for i in map.currentRoom.enemyGroup.activeEnemies:
-        color = RED
-
-        i.Update(dt)
-
-        #pygame.draw.circle(screen, i.color, (i.xPos, i.yPos), 20)
-
-    map.currentRoom.enemyGroup.DrawEnemies(dt)
-        
     
     for p in map.currentRoom.activeEnemyProjectiles:
         color = BLACK
@@ -284,17 +230,10 @@ while running:
 
         pygame.draw.circle(screen, BLACK, (p.xPos, p.yPos), 5)
 
-    #for i in (myAlgo.path):
-        #pygame.draw.circle(screen, RED, (32 + i[0] * 64, 32 + i[1] * 64), 20)
-
-    #pygame.draw.circle(screen, GREEN, (32 + myAlgo.endPos[0] * 64, 32 + myAlgo.endPos[1] * 64), 20)
-
     if (iFrameTimer > 0):
         playerColor = RED
     else:
         playerColor = GREEN
-
-    #(screen, playerColor, [player.xPos, player.yPos], 20)
 
     player.animator.Update(dt)
 
@@ -302,38 +241,9 @@ while running:
         if (len(map.currentRoom.enemyGroup.activeEnemies) == 0 and not map.currentRoom.roomCleared):
             map.currentRoom.ClearRoom()
     
-    if (map.currentRoom.roomCleared):
-        map.currentRoom.CheckDoorCollisions(myHitbox, player)
-    
-    for a in player.activeAttacks:
-        a.Update(dt)
-
-        myPoly = PlayerScript.PointsToLines(a.hitboxPoints)
-
-        hitboxes = [pygame.Rect(p.xPos - p.hitboxSize/2, p.yPos - p.hitboxSize/2, p.hitboxSize, p.hitboxSize) for p in map.currentRoom.enemyGroup.activeEnemies]
-        
-        if (PlayerScript.CheckPolygonCollisions(myPoly, hitboxes)):
-            hitEnemy = next(iter(e for e in map.currentRoom.enemyGroup.activeEnemies if pygame.Rect(e.xPos - e.hitboxSize/2, e.yPos - e.hitboxSize/2, e.hitboxSize, e.hitboxSize) == PlayerScript.CheckPolygonCollisions(myPoly, hitboxes)), None)
-
-            if (hitEnemy not in a.hitEnemies):
-                knockbackVector = (math.cos(math.radians(a.rotation)), -math.sin(math.radians(a.rotation)))
-
-                StopTime(0.05)
-                damage = a.GetDamage()
-                hitEnemy.TakeDamage(damage, knockbackVector, a.knockback)
-
-                a.hitEnemies.append(hitEnemy)
-    
     map.upgradesTracker.Update(map.currentRoom, dt)
-    for u in map.currentRoom.spawnedUpgrades:
-        u.CheckPickup(player)
-            
-    
-    #
-    Timers()
 
     player.CreateHealthBar()
-
     # Update the display
     pygame.display.update()
 

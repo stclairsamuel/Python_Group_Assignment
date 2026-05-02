@@ -122,12 +122,16 @@ class Room:
         self.xLen = 14
         self.yLen = 10
 
+        self.obstacles = []
+
         self.map = map
         self.mapPos = mapPos
 
         self.parentRoom = parentRoom
 
         self.info = []
+
+        self.gameObjects = []
 
         if (overrideFile):
             self.fileName = overrideFile
@@ -156,6 +160,44 @@ class Room:
             self.tiles = json.load(tileSheetFile)
         
         self.roomCleared = False
+
+    def UpdateObjects(self, dt):
+
+        for g in self.gameObjects:
+            if (hasattr(g, "Update")):
+                g.Update(dt)
+    
+    def RenderObjects(self, dt):
+        myList = [tile for tile in self.tileList if tile.tileLetter == "x"]
+        sortedList = sorted(myList, key=lambda x: (x.sortingLayer, x.yPos))
+        for g in sortedList:
+            if (hasattr(g, "Render")):
+                g.Render(dt)
+
+        myList = self.gameObjects
+        sortedList = sorted(myList, key=lambda x: (x.sortingLayer, x.yPos))
+        for g in sortedList:
+            if (hasattr(g, "Render")):
+                g.Render(dt)
+
+        
+    
+    def AddGameObject(self, newObject):
+        if (not hasattr(newObject, 'xPos')):
+            newObject.xPos = 0
+        if (not hasattr(newObject, 'yPos')):
+            newObject.yPos = 0
+        if (not hasattr(newObject, 'sortingLayer')):
+            newObject.sortingLayer = 0
+
+        self.gameObjects.append(newObject)
+        newObject.parentRoom = self
+    
+    def DelGameObject(self, deletedObject):
+        if (deletedObject in self.gameObjects):
+            self.gameObjects.remove(deletedObject)
+        else:
+            print(f'{deletedObject} not in game objects')
 
     def GetPremadeRoom(self, overrideFile):
         with open(f'MapFiles/{overrideFile}.json', 'r') as file:
@@ -306,7 +348,7 @@ class Room:
         self.enemyGroup = EnemyScripts.enemy_group(self, player)
         self.activeEnemydProjectiles = []
     
-    def CheckDoorCollisions(self, playerHitbox, player):
+    def CheckDoorCollisions(self, player):
 
         self.entranceDoors = self.doors
         
@@ -323,14 +365,14 @@ class Room:
             if (count == 0):
                 continue
             
-            if (pygame.Rect.colliderect(d.exitHitbox, playerHitbox)):
+            if (pygame.Rect.colliderect(d.exitHitbox, player.hitbox)):
                 d.TransitionRooms(d.childRoom, player)
                 player.xPos = d.entrancePos[0] * 64 + 32
                 player.yPos = d.entrancePos[1] * 64 + 32
         
         if (self.exitDoor):
             #pygame.draw.rect(pygame.display.get_surface(), (255, 255, 255), self.exitDoor.entranceHitbox)
-            if (pygame.Rect.colliderect(self.exitDoor.entranceHitbox, playerHitbox)):
+            if (pygame.Rect.colliderect(self.exitDoor.entranceHitbox, player.hitbox)):
                 count = 0
                 for i in range(len(self.exitDoor.entranceFacing)):
                     if self.exitDoor.entranceFacing[i] == player.facingDir[i] and self.exitDoor.entranceFacing[i] != 0: count += 1
@@ -343,7 +385,7 @@ class Room:
     def ClearRoom(self):
         self.roomCleared = True
 
-        if (self.map.upgradesTracker):
+        if (self.map.upgradesTracker and len(self.enemyGroup.spawnableTiles) > 0):
             self.map.upgradesTracker.SpawnUpgrade(self)
 
         if (self.map.currentRoom == self.map.finalRoom):
@@ -423,6 +465,8 @@ class Door:
         self.map.currentRoom = nextRoom
         self.map.currentRoom.GenerateMap(player)
 
+        player.parentRoom = self.map.currentRoom
+
         if (self.map.upgradesTracker):
             if ("floating_shield" in self.map.upgradesTracker.heldUpgrades):
                 self.map.upgradesTracker.shield = 1
@@ -479,7 +523,11 @@ class Tile:
         scaleModifier = tileSize / imageSize[0]
         self.tileImage = pygame.transform.scale(self.tileImage, (imageSize[0] * scaleModifier, imageSize[1] * scaleModifier)).convert_alpha()
 
-        self.position = [xCoord * tileSize, yCoord * tileSize]
+        self.xPos = xCoord * tileSize
+        self.yPos = yCoord * tileSize
+        self.sortingLayer = -1
+
+        self.screen = pygame.display.get_surface()
     
     def FindTileMatch(self, tileType, conditions):
         defaultTile = "wallTile1"
@@ -532,8 +580,8 @@ class Tile:
 
         return myTile
     
-    def DrawTile(self, screen):
-        screen.blit(self.tileImage, self.position)
+    def Render(self, dt):
+        self.screen.blit(self.tileImage, (self.xPos, self.yPos))
 
 map = Map(8, 6, 8)
 

@@ -8,6 +8,7 @@ import json
 import ObstaclesScript
 import pynput
 from pynput import mouse
+import Rendering
 
 def Magnitude(vector):
     return math.sqrt(math.pow(vector[0], 2) + math.pow(vector[1], 2))
@@ -43,6 +44,8 @@ def CheckPolygonCollisions(pLines, rects):
 
 class Player:
     def __init__(self, startX, startY):
+        self.map = None
+
         #Constants
         self.acceleration = 3000
         self.maxSpeed = 400
@@ -65,6 +68,9 @@ class Player:
         self.xVel = 0
         self.yVel = 0
 
+        self.attackSize = 1.4
+        self.attackDamage = 1
+
         self.displaySize = 20
         self.hitboxSize = 15
 
@@ -80,7 +86,7 @@ class Player:
 
         self.dashDir = [0, 0]
 
-        self.dashCdTime = 0.2
+        self.dashCdTime = 1
         self.dashCdTimer = 0
 
         self.drag = 0.97
@@ -91,15 +97,98 @@ class Player:
 
         self.upgradesTracker = None
 
-        self.animator = PlayerAnimator()
-        self.animator.player = self
+        self.spriteRenderer = Rendering.sprite_renderer(self)
 
-        self.mostRecentAtk = None
+        filePath = "Player_Anim_Frames"
+        self.animator = Rendering.animator(filePath, self.spriteRenderer)
+
+        self.spriteRenderer.ChangeSize(0.7)
+
+        self.animator.SwitchAnimation("idle")
 
         self.attackCdTime = 0.2
         self.attackCdTimer = 0
+
+        self.invincibilityTimer = 0
+        self.invincibilityTime = 1
+
+        self.hitbox = pygame.Rect(self.xPos, self.yPos, self.hitboxSize, self.hitboxSize)
+    
+    def Update(self, dt):
+        self.Timers(dt)
+        self.GetInput()
+        self.Move(dt)
+        self.CheckDoors()
+    
+    def Render(self, dt):
+        self.Animate()
+        self.spriteRenderer.Render(dt)
+    
+    def Animate(self):
+        currentAnim = self.animator.currentAnimation.animName
+        switchAnim = None
+
+        if (int(16 * self.invincibilityTimer) % 2):
+            self.spriteRenderer.SetColorMask((255, 0, 0))
+        else:
+            if (self.spriteRenderer.colorMask):
+                self.spriteRenderer.SetColorMask(None)
+
+        if (self.isDashing):
+            match (self.facingDir):
+                case (1, 0) | (1, 1) | (1, -1):
+                    switchAnim = "dash_right"
+                case (-1, 0) | (-1, 1) | (-1, -1):
+                    switchAnim = "dash_left"
+                case (0, 1):
+                    switchAnim = "dash_up"
+                case (0, -1):
+                    switchAnim = "dash_down"
+
+        elif (len(self.activeAttacks)):
+            atkDir = NormalizeVector((self.activeAttacks[-1].xPos - self.xPos, self.activeAttacks[-1].yPos - self.yPos))
+            atkDir = (round(atkDir[0]), round(atkDir[1]))
+
+            match (atkDir):
+                case (1, 0) | (1, 1) | (1, -1):
+                    switchAnim = "move_right"
+                case (-1, 0) | (-1, 1) | (-1, -1):
+                    switchAnim = "move_left"
+                case (0, 1):
+                    switchAnim = "move_up"
+                case (0, -1):
+                    switchAnim = "move_down"
+
+
+        else:
+            match (self.xInput, self.yInput):
+                case (1, 0) | (1, 1) | (1, -1):
+                    switchAnim = "move_right"
+                case (-1, 0) | (-1, 1) | (-1, -1):
+                    switchAnim = "move_left"
+                case (0, 1):
+                    switchAnim = "move_up"
+                case (0, -1):
+                    switchAnim = "move_down"
+                case (0, 0):
+                    switchAnim = "idle"
+                case (1, 0) | (1, 1) | (1, -1):
+                    switchAnim = "dash_right"
+                case (-1, 0) | (-1, 1) | (-1, -1):
+                    switchAnim = "dash_right"
+                case (0, 1):
+                    switchAnim = "dash_up"
+                case (0, -1):
+                    switchAnim = "dash_down"
+        
+        
+        if (switchAnim and currentAnim != switchAnim):
+            self.animator.SwitchAnimation(switchAnim)
     
     def GetInput(self):
+        if self.isDashing:
+            return
+
         xInput = 0
         yInput = 0
 
@@ -126,23 +215,18 @@ class Player:
         
         self.xInput = xInput
         self.yInput = yInput
-
-        
             
         if (inpList[pygame.K_LSHIFT] and not self.dashCdTimer > 0):
             self.StartDash()
     
-    def Move(self, dt, obstacles):
+    def Move(self, dt):
+        if (not self.map):
+            return
+
+        obstacles = self.map.currentRoom.obstacles
+
         lastXVel = self.xVel
         lastYVel = self.yVel
-
-        '''
-        if (self.dashTimer > 0):
-            self.isDashing = True
-            myVector = NormalizeVector([self.facingDir[0], -self.facingDir[1]])
-            self.xVel = self.dashSpeed * myVector[0]
-            self.yVel = self.dashSpeed * myVector[1]
-        '''
 
         if (self.movingInto[0] or self.movingInto[1]):
             self.StopDash()
@@ -212,9 +296,12 @@ class Player:
         self.xPos += self.xVel * dt
         self.yPos += self.yVel * dt
 
+        self.hitbox.center = (self.xPos, self.yPos)
+
     def Attack(self):
         if (self.attackCdTimer > 0):
             return
+        
         mousePos = pygame.mouse.get_pos()
         myPos = (self.xPos, self.yPos)
 
@@ -228,9 +315,20 @@ class Player:
             self.xVel += math.cos(angle) * 800
             self.yVel -= math.sin(angle) * 800
 
-        newAttack = PlayerAttack(math.degrees(angle), self)
-        self.mostRecentAtk = newAttack
+        if ("enchanted_sword" in self.upgradesTracker.heldUpgrades and self.upgradesTracker.enchantedStrikeTimer == 0):
+            self.upgradesTracker.enchantedStrikeTimer = self.upgradesTracker.enchantedStrikeTime
+            newAttack = player_hurtbox(math.degrees(angle), self, "Player_Magic_Strike_Frames", 15)
+            newAttack.spriteRenderer.ChangeSize(0.8)
+            newAttack.animator.currentAnimation.animTime = 0.1
+            newAttack.hitboxLength *= 0.3
+            newAttack.hitboxHeight *= 0.4
+            self.activeAttacks.append(newAttack)
+            self.map.currentRoom.AddGameObject(newAttack)
+
+        newAttack = player_hurtbox(math.degrees(angle), self)
         self.activeAttacks.append(newAttack)
+
+        self.map.currentRoom.AddGameObject(newAttack)
 
         self.attackCdTimer = self.attackCdTime
     
@@ -263,7 +361,7 @@ class Player:
             o.CheckPlayerCollision(self, [nextPos[0], nextPos[1]], dt)
     
     def TakeDamage(self, damageAmt):
-        if (self.isDashing):
+        if (self.isDashing or self.invincibilityTimer > 0):
             return
     
         if (self.upgradesTracker):
@@ -275,6 +373,13 @@ class Player:
 
         if (self.currentHealth <= 0):
             pygame.quit()
+
+        self.invincibilityTimer = self.invincibilityTime
+    
+    def Heal(self, amount):
+        self.currentHealth += amount
+        if (self.currentHealth > self.maxHealth):
+            self.currentHealth = self.maxHealth
     
     def CreateHealthBar(self):
         imagePath = os.path.join("Images", "PygameHeart.png")
@@ -298,116 +403,49 @@ class Player:
 
         for i in range(self.currentHealth):
             screen.blit(biggerHeart, (position1[0] + (i * horizontalDistance), position1[1]))
-
-class PlayerAnimator:
-    def __init__(self):
-        self.animationTimer = 0
-
-        self.currentAnimationTime = 1
-
-        self.currentAnimation = "idle"
-        
-        self.idleAnimationTime = 0.5
-        self.walkAnimationTime = 0.5
-        self.dashAnimationTime = 0.2
-
-        self.player = None
-
-        with open("PlayerMoveFrames.json", "r") as file:
-            self.fileContents = json.load(file)
-
-    def Update(self, dt):
-        if (not self.player):
-            return
-
-        self.Timers(dt)
-
-        lastAnimation = self.currentAnimation
-
-        xInput = self.player.xInput
-        yInput = self.player.yInput
-
-        playerInput = xInput or yInput
-
-        moveDir = [xInput, yInput]
-
-        if (len(self.player.activeAttacks) > 0):
-            atk = self.player.activeAttacks[0]
-
-            if (math.cos(math.radians(atk.rotation)) > 0):
-                moveDir[0] = 1
-            else:
-                moveDir[0] = -1
-        
-        if (self.player.isDashing):
-            moveDir = self.player.facingDir
-
-        if (not self.player.isDashing):
-            match moveDir[0]:
-                case -1 : self.currentAnimation = "move_left"
-                case 1 : self.currentAnimation = "move_right"
-                case 0 : 
-                    match moveDir[1]:
-                        case 1 : self.currentAnimation = "move_up"
-                        case -1 : self.currentAnimation = "move_down"
-                        case 0 : self.currentAnimation = "idle"
-        else:
-            match moveDir[0]:
-                case -1 : self.currentAnimation = "dash_left"
-                case 1 : self.currentAnimation = "dash_right"
-                case 0 : 
-                    match moveDir[1]:
-                        case 1 : self.currentAnimation = "dash_up"
-                        case -1 : self.currentAnimation = "dash_down"
     
-        wasWalking = lastAnimation in self.fileContents["walking_animations"].keys()
-        isWalking = self.currentAnimation in self.fileContents["walking_animations"].keys()
-
-        wasDashing = lastAnimation in self.fileContents["dashing_animations"].keys()
-        isDashing = self.currentAnimation in self.fileContents["dashing_animations"].keys()
-
-
-        
-        if (wasWalking and not isWalking or wasDashing and not isDashing):
-            self.animationTimer = self.currentAnimationTime = self.idleAnimationTime
-        if (isWalking and not wasWalking):
-            self.animationTimer = self.currentAnimationTime = self.walkAnimationTime
-        if (isDashing and not wasDashing):
-            self.animationTimer = self.currentAnimationTime = self.dashAnimationTime
-
-        if (self.currentAnimation in self.fileContents["walking_animations"].keys()):
-            animationList = self.fileContents["walking_animations"][self.currentAnimation]
-        elif (self.currentAnimation in self.fileContents["dashing_animations"].keys()):
-            animationList = self.fileContents["dashing_animations"][self.currentAnimation]
-        else:
-            animationList = self.fileContents[self.currentAnimation]
-        
-        timePerFrame = self.currentAnimationTime / len(animationList)
-
-        currentFrameInt = int(self.animationTimer / timePerFrame)
-
-        currentFrame = str(animationList[currentFrameInt - 1])
-
-        with open(f'Images/PlayerAnimFrames/PlayerMoveFrames/{currentFrame}.png') as frame:
-            image = pygame.image.load(frame).convert_alpha()
-            width = image.get_width()
-            height = image.get_height()
-            scale = 1.5
-            scaledImage = pygame.transform.scale(image, (width * scale, height * scale)).convert_alpha()
-            pygame.Surface.blit(pygame.display.get_surface(), scaledImage, (self.player.xPos - (width * scale) / 2, self.player.yPos - (width * scale) / 2 - 10))
+    def CheckDoors(self):
+        if (self.map.currentRoom.roomCleared):
+            self.map.currentRoom.CheckDoorCollisions(self)
     
     def Timers(self, dt):
-        self.animationTimer += dt
-        if self.animationTimer >= self.currentAnimationTime:
-            self.animationTimer = 0
+        if (self.dashCdTimer > 0):
+            self.dashCdTimer -= dt
+        else:
+            self.dashCdTimer = 0
+        
+        if (self.dashTimer > 0):
+            self.dashTimer -= dt
+        else:
+            self.dashTimer = 0
+        
+        if (self.attackCdTimer > 0):
+            self.attackCdTimer -= dt
+        else:
+            self.attackCdTimer = 0
+        
+        if (self.invincibilityTimer > 0):
+            self.invincibilityTimer -= dt
+        else:
+            self.invincibilityTimer = 0
 
             
-class PlayerAttack:
-    def __init__(self, rotation, player):
+class player_hurtbox:
+    def __init__(self, rotation, player, filePath = "Player_Attack_Frames", speed = 0):
         self.hitboxLength = player.attackLength
         self.hitboxHeight = player.attackHeight
         self.distanceFromPlayer = 40
-        self.sizeScale = 3
+        self.sizeScale = player.attackSize
+
+        self.speed = speed
+
+        self.spriteRenderer = Rendering.sprite_renderer(self)
+
+        self.animator = Rendering.animator(filePath, self.spriteRenderer)
+
+        self.animator.currentAnimation.animTime = self.animator.animationTimer = 0.3
+
+        self.spriteRenderer.ChangeSize(self.sizeScale)
 
         self.hitEnemies = []
 
@@ -416,19 +454,8 @@ class PlayerAttack:
         self.player = player
 
         self.knockback = 600
-
-        with open("PlayerAttackFrames.json", "r") as file:
-            self.frames = json.load(file)
-
-        self.editedFrames = []
-        for i in range(len(self.frames)):
-            newImage = pygame.image.load("Images/PlayerAnimFrames/PlayerAttackFrames/" + self.frames[i]).convert_alpha()
-            newFrame = pygame.transform.rotozoom(newImage, rotation, self.sizeScale).convert_alpha()
-            self.editedFrames.insert(0, newFrame)
         
-        self.attackTimer = self.attackTime = 0.3
-
-        self.timePerFrame = self.attackTime / len(self.frames)
+        self.attackTimer = self.attackTime = self.animator.currentAnimation.animTime
 
         self.screen = pygame.display.get_surface()
 
@@ -455,34 +482,80 @@ class PlayerAttack:
             (x + (sinA * w), y - (cosA * w)),
             (x - (sinA * w) + (cosA * h), y + (cosA * w) + (sinA * h)),
         ]
+
+        self.spriteRenderer.SetRotation(rotation)
     
     def Update(self, dt):
-        currentFrame = self.editedFrames[int(self.attackTimer / self.timePerFrame) - 1]
+        myPoly = PointsToLines(self.hitboxPoints)
 
-        imageRect = currentFrame.get_rect()
+        hitboxes = [p.hitbox for p in self.player.map.currentRoom.enemyGroup.activeEnemies]
+        
+        if (CheckPolygonCollisions(myPoly, hitboxes)):
+            hitEnemy = next(iter(e for e in self.player.map.currentRoom.enemyGroup.activeEnemies if e.hitbox == CheckPolygonCollisions(myPoly, hitboxes)), None)
 
-        imageRect.center = (self.xPos, self.yPos)
+            if (hitEnemy not in self.hitEnemies):
+                knockbackVector = (math.cos(math.radians(self.rotation)), -math.sin(math.radians(self.rotation)))
 
-        self.screen.blit(currentFrame, imageRect) 
+                self.parentRoom.map.handler.StopTime(0.05)
 
-        if (self.attackTimer > 0.1):
+                damage = self.GetDamage()
+                hitEnemy.TakeDamage(damage, knockbackVector, self.knockback)
+
+                self.hitEnemies.append(hitEnemy)
+
+
+        if (self.attackTimer > 0):
             self.attackTimer -= dt
         else:
-            self.player.activeAttacks.remove(self)
-            del self
-        
-        try:
-            myPoly = PointsToLines(self.hitboxPoints)
+            self.Delete()
+    
+        if (self.speed):
+            self.Move(dt)
 
-            #for l in myPoly:
-                #pygame.draw.line(pygame.display.get_surface(), (255, 255, 255), *l)
-        except:
-            pass
+    def Move(self, dt):
+        d = self.distanceFromPlayer
+        cosA = math.cos(math.radians(self.rotation))
+        sinA = -math.sin(math.radians(self.rotation))
+
+        self.xPos += math.cos(math.radians(self.rotation)) * self.speed
+        self.yPos -= math.sin(math.radians(self.rotation)) * self.speed
+
+        w = self.hitboxLength
+        h = self.hitboxHeight
+
+        x = self.xPos
+        y = self.yPos
+
+        self.hitboxPoints = [
+            (x - (sinA * w), y + (cosA * w)),
+            (x + (sinA * w), y - (cosA * w)),
+            (x + (sinA * w) + (cosA * h), y - (cosA * w) + (sinA * h)),
+            (x - (sinA * w) + (cosA * h), y + (cosA * w) + (sinA * h)),
+            (x - (sinA * w), y + (cosA * w)),
+            (x + (sinA * w) + (cosA * h), y - (cosA * w) + (sinA * h)),
+            (x + (sinA * w), y - (cosA * w)),
+            (x - (sinA * w) + (cosA * h), y + (cosA * w) + (sinA * h)),
+        ]
+
+        myPoly = PointsToLines(self.hitboxPoints)
+
+        hitboxes = [o.hitbox for o in self.parentRoom.obstacles]
+        
+        if (CheckPolygonCollisions(myPoly, hitboxes)):
+            self.Delete()
+
+        
+    
+    def Render(self, dt):
+        self.spriteRenderer.Render(dt)
+    
+    def Delete(self):
+        if (self in self.player.activeAttacks):
+            self.player.activeAttacks.remove(self)
+        self.player.map.currentRoom.DelGameObject(self)
+    
     
     def GetDamage(self):
-        damage = 1
-        if (self.player.upgradesTracker.scarfPrimed):
-            damage *= 1.5
-            self.player.upgradesTracker.scarfPrimed = False
+        damage = self.player.upgradesTracker.CalculateDamage(self.player.attackDamage)
 
         return damage

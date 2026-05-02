@@ -13,14 +13,12 @@ import EnemyScripts
 import ProjectileScript
 import PlayerScript
 
-def SpawnProjectile(source, target, currentRoom):
-    newProjectile = EnemyProjectile(source, target, currentRoom)
-    currentRoom.activeEnemyProjectiles.append(newProjectile)
+#def SpawnProjectile(source, target, currentRoom):
+    #newProjectile = EnemyProjectile(source, target, currentRoom)
+    #currentRoom.activeEnemyProjectiles.append(newProjectile)
 
-class EnemyProjectile:
-    def __init__(self, source, target, currentRoom):
-        self.handler = currentRoom
-
+class enemy_projectile:
+    def __init__(self, source, target):
         self.damageAmt = 1
 
         self.target = target
@@ -42,8 +40,18 @@ class EnemyProjectile:
     
         self.flyDir = PlayerScript.NormalizeVector(((rotatedX), (rotatedY)))
 
+    def Update(self, dt):
+        self.Move(dt)
+        self.CheckHit()
+    
+    def Render(self, dt):
+        pygame.draw.circle(pygame.display.get_surface(), (0, 0, 0), (self.xPos, self.yPos), 5)
+
     def Move(self, dt):
-        obstacleRects = [o.hitbox for o in self.handler.obstacles]
+        if (not self.parentRoom):
+            return
+        
+        obstacleRects = [o.hitbox for o in self.parentRoom.obstacles]
 
         self.xPos += self.flyDir[0] * self.flySpeed * dt
         self.yPos += self.flyDir[1] * self.flySpeed * dt
@@ -52,10 +60,7 @@ class EnemyProjectile:
 
         for o in obstacleRects:
             if pygame.Rect.colliderect(myHitbox, o):
-                try:
-                    self.handler.activeEnemyProjectiles.remove(self)
-                except:
-                    pass
+                self.Delete()
         
     def CheckHit(self):
         myHitbox = pygame.Rect(self.xPos, self.yPos, self.hitboxSize, self.hitboxSize)
@@ -65,10 +70,14 @@ class EnemyProjectile:
         
         if (pygame.Rect.colliderect(playerHitbox, myHitbox)):
             self.target.TakeDamage(self.damageAmt)
-            try:
-                self.handler.activeEnemyProjectiles.remove(self)
-            except:
-                pass
+            self.Delete()
+    
+    def Delete(self):
+        try:
+            self.parentRoom.activeEnemyProjectiles.remove(self)
+        except:
+            pass
+        self.parentRoom.DelGameObject(self)
 
         
         
