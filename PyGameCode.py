@@ -45,7 +45,7 @@ mapYSize = 6
 
 startRoom = (0, 3)
 
-map = MapGen2.Map(mapXSize, mapYSize, 2)
+map = MapGen2.Map(mapXSize, mapYSize, 5)
 
 player.map = map
 
