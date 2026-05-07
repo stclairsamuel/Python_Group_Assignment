@@ -102,7 +102,7 @@ class Player:
         filePath = "Player_Anim_Frames"
         self.animator = Rendering.animator(filePath, self.spriteRenderer)
 
-        self.spriteRenderer.ChangeSize(0.7)
+        self.spriteRenderer.ChangeSize(0.8)
 
         self.animator.SwitchAnimation("idle")
 
@@ -113,6 +113,8 @@ class Player:
         self.invincibilityTime = 1
 
         self.hitbox = pygame.Rect(self.xPos, self.yPos, self.hitboxSize, self.hitboxSize)
+
+        self.timeSinceLastAttack = 0
     
     def Update(self, dt):
         self.Timers(dt)
@@ -315,7 +317,7 @@ class Player:
             self.xVel += math.cos(angle) * 800
             self.yVel -= math.sin(angle) * 800
 
-        if ("enchanted_sword" in self.upgradesTracker.heldUpgrades and self.upgradesTracker.enchantedStrikeTimer == 0):
+        if ("enchanted_blade" in self.upgradesTracker.heldUpgrades and self.upgradesTracker.enchantedStrikeTimer == 0):
             self.upgradesTracker.enchantedStrikeTimer = self.upgradesTracker.enchantedStrikeTime
             newAttack = player_hurtbox(math.degrees(angle), self, "Player_Magic_Strike_Frames", 15)
             newAttack.spriteRenderer.ChangeSize(0.8)
@@ -331,6 +333,8 @@ class Player:
         self.map.currentRoom.AddGameObject(newAttack)
 
         self.attackCdTimer = self.attackCdTime
+
+        self.timeSinceLastAttack = 0
     
     def StartDash(self):
         self.dashTimer = self.dashTime
@@ -375,6 +379,15 @@ class Player:
             pygame.quit()
 
         self.invincibilityTimer = self.invincibilityTime
+
+        if ("volatile_shell" in self.upgradesTracker.heldUpgrades):
+            expSize = self.upgradesTracker.shellExplosionSize
+            shellHitbox = pygame.Rect(self.xPos, self.yPos, expSize, expSize)
+            shellHitbox.center = (self.xPos, self.yPos)
+
+            for e in self.parentRoom.enemyGroup.activeEnemies:
+                if (pygame.Rect.colliderect(e.hitbox, shellHitbox) or shellHitbox.contains(e.hitbox)):
+                    e.TakeDamage(3, (0, 0))
     
     def Heal(self, amount):
         self.currentHealth += amount
@@ -428,6 +441,10 @@ class Player:
             self.invincibilityTimer -= dt
         else:
             self.invincibilityTimer = 0
+        
+        self.timeSinceLastAttack += dt
+        if (self.timeSinceLastAttack > 0.3):
+            self.activeAttacks = []
 
             
 class player_hurtbox:

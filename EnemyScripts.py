@@ -63,15 +63,14 @@ class enemy_group:
     
     def SpawnBoss(self):
         newEnemy = boss(self, self.target)
-        newEnemy.inaccuracy = 30
-        newEnemy.shootCooldownTime = 0.1
+
+        
         
         screen = pygame.display.get_window_size()
         newEnemy.xPos = screen[0]/2
         newEnemy.yPos = screen[1]/2
-        newEnemy.maxSpeed = 150
-        newEnemy.hitboxSize = 30
 
+        self.room.AddGameObject(newEnemy)
         self.activeEnemies.append(newEnemy)
         
 
@@ -85,7 +84,7 @@ class enemy:
 
         self.animator = Rendering.animator(animationFile, self.spriteRenderer)
 
-        self.spriteRenderer.animator = self.animator
+        self.spriteRenderer.ChangeSize(1.1)
 
         RED = (255, 0, 0)
         WHITE = (255, 255, 255)
@@ -352,9 +351,6 @@ class enemy:
             self.shootCooldownTimer -= dt
         else:
             self.shootCooldownTimer = 0
-
-        if (self.shootCooldownTimer < 1 and not self.canSeePlayer):
-            self.shootCooldownTimer = 1
         
         if (self.stunTimer > 0):
             self.stunTimer -= dt
@@ -380,20 +376,13 @@ class boss:
         self.acceleration = 3000
 
         animationFile = "Boss_Animation_Frames"
+        self.spriteRenderer = Rendering.sprite_renderer(self)
 
-        self.animator = Rendering.animator(self, animationFile)
+        self.animator = Rendering.animator(animationFile, self.spriteRenderer)
 
-        RED = (255, 0, 0)
-        WHITE = (255, 255, 255)
+        self.spriteRenderer.ChangeSize(2)
 
-        self.color = RED
-
-        self.idealRange = 100
-        self.rangeSlack = 100
-
-        self.hasSeenPlayer = False
-
-        self.maxSpeed = 350
+        self.maxSpeed = 300
         self.speed = 20
 
         self.xVel = 0
@@ -403,8 +392,11 @@ class boss:
 
         self.target = player
 
-        self.currentHealth = self.maxHealth = 4
+        self.currentHealth = self.maxHealth = 40
         self.mySpawnTile = random.choice(group.spawnableTiles)
+
+        self.healthBar = health_bar(self)
+        self.group.room.AddGameObject(self.healthBar)
 
         self.hitboxSize = 30
 
@@ -433,27 +425,30 @@ class boss:
         self.hitflashTime = 0.1
         self.hitflashTimer = 0
 
+        self.shootCooldownTimer = 0
+        self.shootCooldownTime = 0.1
+
         self.attacks = {
             0 : {"name" : "swipe",
-                 "animation" : "Rat_Boss_Melee", "Ideal Range" : 30, "Range Slack" : 30, "Charge Time" : 1, "Attack Time" : 0},
+                 "animation" : "Rat_Boss_Melee", "Ideal Range" : 60, "Range Slack" : 60, "Charge Time" : 0.3, "Attack Time" : 0.3},
             1 : {"name" : "rapid", 
-                 "animation" : "Rat_Boss_Aim", "Ideal Range" : 200, "Range Slack" : 100, "Charge Time" : 0.33, "Attack Time" : 2},
+                 "animation" : "Rat_Boss_Aim", "Ideal Range" : 300, "Range Slack" : 200, "Charge Time" : 0.33, "Attack Time" : 3},
             2 : {"name" : "blast",
-                 "animation" : "Rat_Boss_Throw", "Ideal Range" : 100, "Range Slack" : 50, "Charge Time" : 0.86, "Attack Time" : 0, "Explosion Delay" : 1, "Explosion Duration" : 0.5}
+                 "animation" : "Rat_Boss_Throw", "Ideal Range" : 300, "Range Slack" : 150, "Charge Time" : 0.4, "Attack Time" : 0.4, "Explosion Delay" : 1, "Explosion Duration" : 0.5}
         }
 
-        self.animator.animations["Rat_Boss_Shoot"].animTime = 0.2
-        self.animator.animations["Rat_Boss_Melee"].animTime = self.attacks[0]["Charge Time"]
+        self.animator.animations["Rat_Boss_Shoot"].animTime = self.shootCooldownTime
+        self.animator.animations["Rat_Boss_Melee"].animTime = self.attacks[0]["Charge Time"] + self.attacks[0]["Attack Time"]
         self.animator.animations["Rat_Boss_Aim"].animTime = self.attacks[1]["Charge Time"]
-        self.animator.animations["Rat_Boss_Throw"].animTime = self.attacks[2]["Charge Time"]
+        self.animator.animations["Rat_Boss_Throw"].animTime = self.attacks[2]["Charge Time"] + self.attacks[2]["Attack Time"]
 
-        self.cooldownTime = 1
+        self.cooldownTime = 0.2
         self.cooldownTimer = 0
 
         self.currentAttack = 1
         self.lastAttack = None
 
-        self.playerLastSeen = None
+        self.playerLastSeen = (0, 0)
 
         self.isAttacking = False
 
@@ -464,20 +459,31 @@ class boss:
 
         self.attackChargeTimer = 0
         self.attackTimer = 0
+
+        self.molotovThrowPos = None
+
+        self.rushTimer = 3
     
     def Update(self, dt):
+        self.Timers(dt)
         self.UpdateAttack(dt)
         self.Move(dt)
-        self.Timers(dt)
-        #self.animator.Update(dt)
 
-        
+        print(self.rushTimer)
+    
+    def Render(self, dt):
+        self.spriteRenderer.Render(dt)
+
+        if (self.hitflashTimer > 0 and not self.spriteRenderer.colorMask):
+            self.spriteRenderer.SetColorMask((255, 255, 255))
+        if (self.hitflashTimer == 0 and self.spriteRenderer.colorMask):
+            self.spriteRenderer.SetColorMask(None)
     
     def Move(self, dt):
         couldSeePlayer = self.canSeePlayer
 
         dirToMove = (0, 0)
-        
+
         self.canSeePlayer = self.CheckPlayerSight()
 
         pXPos = self.target.xPos
@@ -491,14 +497,12 @@ class boss:
 
         if (self.currentAttack == None):
             self.DecideAttack()
-    
+
         inRange = self.InRange()
         tooClose = self.TooClose()
 
         if (self.canSeePlayer):
             targetPos = (pXPos, pYPos)
-
-            if (self.hasSeenPlayer == False): self.hasSeenPlayer = True
 
             if (not inRange):
                 dirToMove = PlayerScript.NormalizeVector((targetPos[0] - self.xPos, targetPos[1] - self.yPos))
@@ -545,9 +549,6 @@ class boss:
             self.yVel = (self.yVel / speed) * self.maxSpeed
 
         obstacleRects = self.group.obstacleRects.copy()
-        
-        #for o in obstacleRects:
-            #pygame.draw.rect(pygame.display.get_surface(), (255, 255, 255), o)
 
         predictedX = self.xPos + self.xVel * dt
         predictedY = self.yPos + self.yVel * dt
@@ -558,7 +559,6 @@ class boss:
         skinWidth = 0.02
 
         for o in obstacleRects:
-
             if (pygame.Rect.colliderect(o, predictedXHitbox)):
                 if (self.xVel > 0):
                     self.xPos = o.left - self.hitboxSize/2 - skinWidth
@@ -588,14 +588,8 @@ class boss:
             self.yPos = self.hitboxSize/2 + skinWidth
             self.yVel = 0
 
-        if ((self.attackState == 0 or self.cooldownTimer > 0) and speed < 1):
-            self.animator.SwitchAnimation("Rat_Boss_Walk")
-
-        if (self.attackState == 0 and self.cooldownTimer == 0 and inRange and not tooClose):
+        if (self.attackState == 0 and self.cooldownTimer == 0 and inRange and not tooClose or self.rushTimer == 0 and self.attackState == 0):
             self.StartAttack()
-
-        if (self.isAttacking):
-            self.UpdateAttack()
         
         self.xPos += self.xVel * dt
         self.yPos += self.yVel * dt
@@ -615,8 +609,22 @@ class boss:
         return raycast.hit
     
     def DecideAttack(self):
-        nextAtk = random.randint(0, 2)
+        pDist = PlayerScript.Magnitude((self.target.xPos - self.xPos, self.target.yPos - self.yPos))
+
+        print(pDist)
+
+        if (pDist < self.attacks[0]["Ideal Range"] + self.attacks[0]["Range Slack"]):
+            nextAtk = 0
+
+        elif (self.canSeePlayer):
+            nextAtk = random.choice((0, 1, 1, 1, 1, 2, 2))
+
+        else:
+            nextAtk = random.choice((1, 1, 1, 2))
+
         self.currentAttack = nextAtk
+
+        self.rushTimer = 3
     
     def InRange(self):
         atk = self.attacks[self.currentAttack]
@@ -641,63 +649,116 @@ class boss:
         return (dist < distMin)
     
     def StartAttack(self):
+        print("attack started")
+
         self.attackState = 1
+
+        self.rushTimer = 3
 
         self.attackChargeTimer = self.attacks[self.currentAttack]["Charge Time"]
 
         self.animator.SwitchAnimation(self.attacks[self.currentAttack]["animation"])
 
+        if (self.currentAttack == 2):
+            self.molotovThrowPos = self.playerLastSeen
+
     def UpdateAttack(self, dt):
+        pDist = PlayerScript.Magnitude((self.target.xPos - self.xPos, self.target.yPos - self.yPos))
+
         if (self.attackState == 1 and self.attackChargeTimer == 0):
-            self.ExecuteAttack()
+                self.ExecuteAttack()
 
         if (self.attackState == 2):
             if (self.attackTimer > 0):
                 pass
             else:
                 self.EndAttack()
+
+        if (self.currentAttack == 1 and not self.canSeePlayer and self.attackTimer < self.attacks[1]["Attack Time"]/2):
+            self.EndAttack()
+
+
+        if (self.attackState == 2 and self.currentAttack == 1):
+            self.shootCooldownTimer += dt
+
+            if (self.shootCooldownTimer >= self.shootCooldownTime):
+                self.shootCooldownTimer -= self.shootCooldownTime
+                self.Shoot()
+
+        if (self.attackState == 2 and self.currentAttack == 1 and pDist < 64):
+            self.EndAttack()
+            self.DecideAttack()
+            self.StartAttack()
             
-
-
     def ExecuteAttack(self):
+        print("attack execute")
+
         self.attackState = 2
         
-
         (self.attacks[self.currentAttack]["name"])
 
         match self.attacks[self.currentAttack]["name"]:
             case "swipe":
-                pass
+                meleeSize = 128
+
+                meleeHitbox = pygame.Rect(self.xPos, self.yPos, meleeSize, meleeSize)
+                meleeHitbox.center = (self.xPos, self.yPos)
+
+                if (pygame.Rect.colliderect(self.target.hitbox, meleeHitbox) or meleeHitbox.contains(self.target.hitbox)):
+                    self.target.TakeDamage(1)
 
             case "rapid":
                 self.animator.SwitchAnimation("Rat_Boss_Shoot")
+                self.shootCooldownTimer = 0
         
             case "blast":
-                pass
+                newMolotov = molotov(self, self.playerLastSeen, self.attacks[2]["Explosion Delay"])
+                self.parentRoom.AddGameObject(newMolotov)
         
         if (self.attacks[self.currentAttack]["Attack Time"]):
             self.attackTimer = self.attacks[self.currentAttack]["Attack Time"]
         else:
             self.EndAttack()
-        
     
     def Shoot(self):
-        ProjectileScript.SpawnProjectile(self, self.target, self.parentRoom)
+        newProj = ProjectileScript.enemy_projectile(self, self.target)
 
-        self.shootCooldownTimer = self.shootCooldownTime
+        self.parentRoom.AddGameObject(newProj)
     
     def EndAttack(self):
         self.attackState = 0
         self.currentAttack = None
         self.cooldownTimer = self.cooldownTime
+        self.attackTimer = 0
 
         self.animator.SwitchAnimation("Rat_Boss_Walk")
-        
-    def Animate(self):
-        pass
 
-    def TakeDamage(self, damage, knockbackVector, knockback):
-        pass
+    def TakeDamage(self, damageAmt, knockbackDir, knockbackAmt = 1, stunTime = 0.02):
+        if (self.stunTimer > 0):
+            return
+        
+        self.runTimer = self.runTime
+        
+        self.shootCooldownTimer = 1
+        self.currentHealth -= damageAmt
+        self.stunTimer = stunTime
+        self.xVel = knockbackDir[0] * knockbackAmt
+        self.yVel = knockbackDir[1] * knockbackAmt
+
+        self.hurtTimer = self.hurtTime
+        self.hitflashTimer = self.hitflashTime
+
+        if (self.currentHealth <= 0):
+            self.group.activeEnemies.remove(self)
+        
+        if (self.currentHealth <= 0):
+            self.Die()
+    
+    def Die(self):
+        if (self in self.group.activeEnemies):
+            self.group.activeEnemies.remove(self)
+        if (self in self.group.room.gameObjects):
+            self.group.room.gameObjects.remove(self)
 
     def Timers(self, dt):
         if (self.attackTimer > 0): self.attackTimer -= dt
@@ -714,80 +775,161 @@ class boss:
         
         if (self.hurtTimer > 0): self.hurtTimer -= dt
         else: self.hurtTimer = 0
+
+        if (self.hitflashTimer > 0): self.hitflashTimer -= dt
+        else: self.hitflashTimer = 0
+
+        if (self.rushTimer > 0): self.rushTimer -= dt
+        else: self.rushTimer = 0
+
+class molotov:
+    def __init__(self, parent, explodePos, explodeTime):
+        self.sortingLayer = 1
+        
+        self.target = parent.target
+
+        filePath = "Thrown_Molotov_Frames"
+
+        self.sprite_renderer = Rendering.sprite_renderer(self)
+        self.animator = Rendering.animator(filePath, self.sprite_renderer)
+        
+        self.parent = parent
+        self.explodePos = explodePos
+        self.startPos = (parent.xPos, parent.yPos)
+
+        self.explodeTimer = explodeTime
+
+        self.xPos = parent.xPos
+        self.yPos = parent.yPos
     
-class EnemyHurtbox:
-    def __init__(self, duration, position, size, rotation):
-        self.duration = duration
+    def Update(self, dt):
+        self.Timers(dt)
+        self.SetPos()
 
-        self.parent = None
+    def Render(self, dt):
+        self.sprite_renderer.Render(dt)
 
-        self.hitboxLength = size[0]
-        self.hitboxHeight = size[1]
+    def SetPos(self):
+        startPos = self.startPos
+        endPos = self.explodePos
 
-        self.xPos = position[0]
-        self.yPos = position[1]
+        travelVector = (startPos[0] - endPos[0], startPos[1] - endPos[1])
 
-        self.sizeScale = 1
+        travelPercent = self.explodeTimer / self.parent.attacks[2]["Explosion Delay"]
+
+        nextPos = (endPos[0] + (travelVector[0] * travelPercent), endPos[1] + (travelVector[1] * travelPercent))
+
+        self.xPos, self.yPos = nextPos
+
+
+
+    def Timers(self, dt):
+        if (self.explodeTimer > 0):
+            self.explodeTimer -= dt
+        else:
+            self.explodeTimer = 0
+            
+            newFire = explosion(self)
+            self.parentRoom.AddGameObject(newFire)
+
+            self.parentRoom.DelGameObject(self)
+
+
+class explosion:
+    def __init__(self, parent):
+        self.parent = parent
+
+        self.xPos = parent.xPos
+        self.yPos = parent.yPos
+        self.sortingLayer = -1
+
+        self.spriteSize = 32
+
+        self.sizeScale = 3
+
+        filePath = "Player_Burning_Ground_Frames"
+            
+        self.spriteRenderer = Rendering.sprite_renderer(self)
+
+        self.animator = Rendering.animator(filePath, self.spriteRenderer)
+
+        self.spriteRenderer.ChangeSize(self.sizeScale)
+
+        self.tickTimer = self.tickTime = 0.5
+
+        self.durationTimer = self.durationTime = 2.5
+
+        self.fadingIn = True
+        self.fadingOut = False
+
+        self.hitbox = pygame.Rect(self.xPos, self.yPos, 2 * self.sizeScale * self.spriteSize, 2 * self.sizeScale * self.spriteSize)
+        self.hitbox.center = (self.xPos, self.yPos)
+    
+    def Update(self, dt):
+        self.Timers(dt)
+    
+    def Render(self, dt):
+        self.spriteRenderer.Render(dt)
+    
+    def Timers(self, dt):
+        self.tickTimer += dt
+        if (self.tickTimer > self.tickTime):
+            self.tickTimer -= self.tickTime
+            self.DamageTick()
+        
+        if (self.durationTimer > 0):
+            self.durationTimer -= dt
+        else:
+            self.durationTimer = 0
+            self.Delete()
+
+    def Delete(self):
+        self.parentRoom.DelGameObject(self)
+
+    def DamageTick(self):
+        player = self.parent.target
+
+        if pygame.Rect.colliderect(self.hitbox, player.hitbox) or self.hitbox.contains(player.hitbox):
+            player.TakeDamage(1)
+
+class health_bar:
+    def __init__(self, parent):
+        self.color = (255, 0, 0)
+
+        self.parent = parent
+
+        screen = pygame.display.get_surface()
+        screenSize = screen.get_size()
+
+        self.xPos = screenSize[0]/2
+        self.yPos = 40
+
+        self.sizeScale = 4
+
+        self.sortingLayer = 1
+
+        borderPath = "Images/Healthbar_Shell.png"
+        with open(borderPath, "r") as file:
+            borderImage = pygame.image.load(file)
+
+            self.spriteRenderer = Rendering.sprite_renderer(self, borderImage)
+        
+        self.spriteRenderer.ChangeSize(self.sizeScale)
+
+        self.max = self.spriteRenderer.currentImage.get_size()[0]
+
+        self.currentValue = self.maxValue = parent.maxHealth
 
         self.screen = pygame.display.get_surface()
+        screenSize = screen.get_size()
 
-        cosA = math.cos(math.radians(rotation))
-        sinA = -math.sin(math.radians(rotation))
-
-        w = self.hitboxLength
-        h = self.hitboxHeight
-
-        x = self.xPos
-        y = self.yPos
-
-        self.hitboxPoints = [
-            (x - (sinA * w), y + (cosA * w)),
-            (x + (sinA * w), y - (cosA * w)),
-            (x + (sinA * w) + (cosA * h), y - (cosA * w) + (sinA * h)),
-            (x - (sinA * w) + (cosA * h), y + (cosA * w) + (sinA * h)),
-            (x - (sinA * w), y + (cosA * w)),
-            (x + (sinA * w) + (cosA * h), y - (cosA * w) + (sinA * h)),
-            (x + (sinA * w), y - (cosA * w)),
-            (x - (sinA * w) + (cosA * h), y + (cosA * w) + (sinA * h)),
-        ]
-
-        self.renderer.SetRotation(rotation)
+        self.redFill = pygame.Rect(screenSize[0]/2 - 64 * 2, self.yPos - 16, *self.spriteRenderer.currentImage.get_size())
 
     def Update(self, dt):
-        if (self.attackTimer > 0.1):
-            self.attackTimer -= dt
-        else:
-            self.parent.activeAttacks.remove(self)
-            del self
-        
-        try:
-            myPoly = PlayerScript.PointsToLines(self.hitboxPoints)
+        self.redFill[2] = self.max * (self.parent.currentHealth / self.parent.maxHealth)
 
-            #for l in myPoly:
-                #pygame.draw.line(pygame.display.get_surface(), (255, 255, 255), *l)
-        except:
-            pass
+    def Render(self, dt):
+        pygame.draw.rect(self.screen, self.color, self.redFill)
 
-        myPoly = PlayerScript.PointsToLines(self.hitboxPoints)
+        self.spriteRenderer.Render(dt)
 
-        hitbox = pygame.Rect(self.parent.target.xPos, self.parent.target.yPos, self.parent.target.hitboxSize, self.parent.target.hitboxSize)
-        hitbox.center = (self.parent.target.xPos, self.parent.target.yPos)
-
-        self.hasHitPlayer = False
-        
-        if (PlayerScript.CheckPolygonCollisions(myPoly, [hitbox])):
-            hitPlayer = next(iter(e for e in self.map.self.parentRoom.enemyGroup.activeEnemies if pygame.Rect(e.xPos - e.hitboxSize/2, e.yPos - e.hitboxSize/2, e.hitboxSize, e.hitboxSize) == PlayerScript.CheckPolygonCollisions(myPoly, hitboxes)), None)
-
-            if (hitPlayer and not self.hasHitPlayer):
-                knockbackVector = (math.cos(math.radians(self.rotation)), -math.sin(math.radians(self.rotation)))
-
-                PlayerScript.StopTime(0.05)
-
-                ##
-                damage = self.GetDamage()
-                hitPlayer.TakeDamage(damage, knockbackVector, self.knockback)
-
-                self.hasHitPlayer = True
-
-    def Timers(self):
-        pass

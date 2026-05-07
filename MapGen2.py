@@ -92,7 +92,10 @@ class Map:
                 newRoom = Room(self, nextPos, r)
                 self.rooms.append(newRoom)
                 # ERROR HERE
-                self.info[nextPos[1]][nextPos[0]] = f's{r}'
+                try:
+                    self.info[nextPos[1]][nextPos[0]] = f's{r}'
+                except:
+                    continue
 
     
     def NextRoomPos(self, currentPos):
@@ -101,7 +104,7 @@ class Map:
                      (currentPos[0], currentPos[1] + 1)]
     
         for p in positionsToCheck:
-            if (p[0] <= 0 or p[1] <= 0 or p[0] >= self.maxLength - 1 or p[1] >= self.maxHeight - 1):
+            if (p[0] < 0 or p[1] < 0 or p[0] >= self.maxLength - 1 or p[1] >= self.maxHeight - 1):
                 positionsToCheck.remove(p)
                 continue
             for r in self.rooms:

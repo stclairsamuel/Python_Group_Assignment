@@ -45,7 +45,7 @@ mapYSize = 6
 
 startRoom = (0, 3)
 
-map = MapGen2.Map(mapXSize, mapYSize, 6)
+map = MapGen2.Map(mapXSize, mapYSize, 2)
 
 player.map = map
 
@@ -188,6 +188,8 @@ map.handler = game_handler()
 for r in map.rooms:
     r.AddGameObject(player)
     r.AddGameObject(map.handler.cursor)
+
+player.parentRoom = map.currentRoom
 
 pygame.mouse.set_visible(False)
 

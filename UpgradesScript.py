@@ -18,6 +18,8 @@ class item_glow:
         self.xPos = item.xPos
         self.yPos = item.yPos
 
+        self.sortingLayer = -1
+
         filePath = "Glow_Animation_Frames"
             
         self.spriteRenderer = Rendering.sprite_renderer(self)
@@ -60,7 +62,7 @@ class fallen_upgrade:
 
         self.spriteRenderer = Rendering.sprite_renderer(self, myImage)
 
-        self.spriteRenderer.ChangeSize(2)
+        self.spriteRenderer.ChangeSize(0.5)
 
     def CheckPickup(self):
         player = self.tracker.player
@@ -103,7 +105,6 @@ class upgrade_tracker:
             13 : "pointy_tunic", # dashing through enemies deals damage
             14 : "hardened_shell", # additional i frames
             15 : "volatile_shell", # damage nearby enemies on taking damage
-            16 : "cowards_robe" # move faster after taking damage
         }
 
         self.player = player
@@ -121,6 +122,15 @@ class upgrade_tracker:
         self.enchantedStrikeTimer = 0
         self.enchantedStrikeTime = 2
 
+        self.bootFireTimer = 0
+        self.bootFireTime = 1
+
+        self.knockoutCounter = 0
+
+        self.tunicEnemies = []
+
+        self.shellExplosionSize = 128
+
     def SpawnUpgrade(self, room):
         newUpgrade = fallen_upgrade(self, room)
         glow = item_glow(newUpgrade)
@@ -130,6 +140,15 @@ class upgrade_tracker:
 
     def Update(self, room, dt):
         self.Timers(dt)
+
+        if (self.player.isDashing and "pointy_tunic" in self.heldUpgrades):
+            for e in self.player.parentRoom.enemyGroup.activeEnemies:
+                if pygame.Rect.colliderect(self.player.hitbox, e.hitbox) or self.player.hitbox.contains(e.hitbox) and e not in self.tunicEnemies:
+                    e.TakeDamage(1, (0, 0))
+                    self.tunicEnemies.append(e)
+        
+        if (not self.player.isDashing and len(self.tunicEnemies) > 0):
+            self.tunicEnemies = []
     
     def Timers(self, dt):
 
@@ -140,11 +159,25 @@ class upgrade_tracker:
                 self.sharpScarfTimer = 0
                 self.scarfPrimed = False
         
-        if ("enchanted_sword" in self.heldUpgrades):
+        if ("enchanted_blade" in self.heldUpgrades):
             if (self.enchantedStrikeTimer > 0):
                 self.enchantedStrikeTimer -= dt
             else:
                 self.enchantedStrikeTimer = 0
+    
+        if ("flaming_boots" in self.heldUpgrades):
+            if (len(self.player.parentRoom.enemyGroup.activeEnemies)):
+                self.bootFireTimer += dt
+                if (self.bootFireTimer >= self.bootFireTime):
+                    self.bootFireTimer -= self.bootFireTime
+                    self.SpawnFire()
+                    print("hit")
+            else:
+                self.bootFireTimer = 0
+
+    def SpawnFire(self):
+        newFire = burning_ground(self.player)
+        self.player.parentRoom.AddGameObject(newFire)
     
     def Pickup(self, pickedUpgrade):
         upgradeID = pickedUpgrade.upgradeID
@@ -170,8 +203,21 @@ class upgrade_tracker:
             case "life_elixir":
                 self.player.maxHealth += 2
                 self.player.currentHealth += 2
+            
+            case "quick_claws":
+                self.player.attackCdTime = 0.1
 
-        self.heldUpgrades.append(pickedUpgrade)
+            case "strong_claws":
+                self.player.attackDamage = 2
+
+            case "dashing_dress":
+                self.player.dashCdTime = 0.5
+            
+            case "hardened_shell":
+                self.player.invincibilityTime = 1.5
+
+        self.heldUpgrades.append(self.upgradeIDs[pickedUpgrade.upgradeID])
+        print(self.heldUpgrades)
     
     def CalculateDamage(self, damage):
         if (self.scarfPrimed):
@@ -183,6 +229,12 @@ class upgrade_tracker:
             if (self.lifestealTracker >= 12):
                 self.lifestealTracker = 0
                 self.player.Heal(1)
+
+        if ("knockout_glove" in (self.heldUpgrades)):
+            self.knockoutCounter += 1
+            if (self.knockoutCounter >= 3):
+                self.knockoutCounter = 0
+                damage *= 2
         
 
         return damage
@@ -193,4 +245,57 @@ class burning_ground:
         self.yPos = player.yPos
         self.sortingLayer = -1
 
+        self.spriteSize = 32
+
+        self.sizeScale = 1.6
+
+        filePath = "Player_Burning_Ground_Frames"
+            
+        self.spriteRenderer = Rendering.sprite_renderer(self)
+
+        self.animator = Rendering.animator(filePath, self.spriteRenderer)
+
+        self.spriteRenderer.ChangeSize(self.sizeScale)
+
+        self.tickTimer = self.tickTime = 0.5
+
+        self.durationTimer = self.durationTime = 2.5
+
+        self.fadingIn = True
+        self.fadingOut = False
+
+        self.hitbox = pygame.Rect(self.xPos, self.yPos, 2 * self.sizeScale * self.spriteSize, 2 * self.sizeScale * self.spriteSize)
+        self.hitbox.center = (self.xPos, self.yPos)
+    
+    def Update(self, dt):
+        self.Timers(dt)
+    
+    def Render(self, dt):
+        self.spriteRenderer.Render(dt)
+    
+    def Timers(self, dt):
+        self.tickTimer += dt
+        if (self.tickTimer > self.tickTime):
+            self.tickTimer -= self.tickTime
+            self.DamageTick()
         
+        if (self.durationTimer > 0):
+            self.durationTimer -= dt
+        else:
+            self.durationTimer = 0
+            self.Delete()
+
+    def Delete(self):
+        self.parentRoom.DelGameObject(self)
+
+    def DamageTick(self):
+        for e in self.parentRoom.enemyGroup.activeEnemies:
+            if pygame.Rect.colliderect(self.hitbox, e.hitbox) or self.hitbox.contains(e.hitbox):
+                e.TakeDamage(1, (0, 0))
+
+
+
+
+
+
+    
