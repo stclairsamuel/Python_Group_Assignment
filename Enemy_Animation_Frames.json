@@ -1,0 +1,21 @@
+{
+    "Rat_Mobster_Idle" : [
+        "Images/EnemyAnimFrames/Rat_Mobster_Idle1",
+        "Images/EnemyAnimFrames/Rat_Mobster_Idle2",
+        "Images/EnemyAnimFrames/Rat_Mobster_Idle3",
+        "Images/EnemyAnimFrames/Rat_Mobster_Idle4",
+        "Images/EnemyAnimFrames/Rat_Mobster_Idle5",
+        "Images/EnemyAnimFrames/Rat_Mobster_Idle6"
+    ],
+
+    "Rat_Mobster_Walk" : [
+        "Images/EnemyAnimFrames/Rat_Mobster_Walk1",
+        "Images/EnemyAnimFrames/Rat_Mobster_Walk2",
+        "Images/EnemyAnimFrames/Rat_Mobster_Walk3",
+        "Images/EnemyAnimFrames/Rat_Mobster_Walk4"
+    ],
+
+    "Rat_Mobster_Hurt" : [
+        "Images/EnemyAnimFrames/Rat_Mobster_Hurt"
+    ]
+}

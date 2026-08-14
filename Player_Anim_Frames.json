@@ -1,0 +1,66 @@
+{
+    "idle" : [
+        "Images/PlayerAnimFrames/PlayerMoveFrames/Idle_1",
+        "Images/PlayerAnimFrames/PlayerMoveFrames/Idle_2"
+    ],
+    
+    "move_up" : [
+        "Images/PlayerAnimFrames/PlayerMoveFrames/Walking_Forward_1",
+        "Images/PlayerAnimFrames/PlayerMoveFrames/Walking_Forward_2"
+    ],
+
+    "move_left" : [
+        "Images/PlayerAnimFrames/PlayerMoveFrames/Walking_Left_1",
+        "Images/PlayerAnimFrames/PlayerMoveFrames/Walking_Left_2"
+    ],
+
+    "move_right" : [
+        "Images/PlayerAnimFrames/PlayerMoveFrames/Walking_Right_1",
+        "Images/PlayerAnimFrames/PlayerMoveFrames/walking_Right_2"
+    ],
+
+    "move_down" : [
+        "Images/PlayerAnimFrames/PlayerMoveFrames/Walking_Backward_1",
+        "Images/PlayerAnimFrames/PlayerMoveFrames/Walking_Backward_2"
+    ],
+
+    "dash_up" : [
+        "Images/PlayerAnimFrames/PlayerMoveFrames/Dashing_Forward_1",
+        "Images/PlayerAnimFrames/PlayerMoveFrames/Dashing_Forward_2",
+        "Images/PlayerAnimFrames/PlayerMoveFrames/Dashing_Forward_3",
+        "Images/PlayerAnimFrames/PlayerMoveFrames/Dashing_Forward_4",
+        "Images/PlayerAnimFrames/PlayerMoveFrames/Dashing_Forward_5",
+        "Images/PlayerAnimFrames/PlayerMoveFrames/Dashing_Forward_6",
+        "Images/PlayerAnimFrames/PlayerMoveFrames/Dashing_Forward_7"
+    ],
+
+    "dash_left" : [
+        "Images/PlayerAnimFrames/PlayerMoveFrames/Dashing_Left_1",
+        "Images/PlayerAnimFrames/PlayerMoveFrames/Dashing_Left_2",
+        "Images/PlayerAnimFrames/PlayerMoveFrames/Dashing_Left_3",
+        "Images/PlayerAnimFrames/PlayerMoveFrames/Dashing_Left_4",
+        "Images/PlayerAnimFrames/PlayerMoveFrames/Dashing_Left_5",
+        "Images/PlayerAnimFrames/PlayerMoveFrames/Dashing_Left_6",
+        "Images/PlayerAnimFrames/PlayerMoveFrames/Dashing_Left_7"
+    ],
+
+    "dash_right" : [
+        "Images/PlayerAnimFrames/PlayerMoveFrames/Dashing_Right_1",
+        "Images/PlayerAnimFrames/PlayerMoveFrames/Dashing_Right_2",
+        "Images/PlayerAnimFrames/PlayerMoveFrames/Dashing_Right_3",
+        "Images/PlayerAnimFrames/PlayerMoveFrames/Dashing_Right_4",
+        "Images/PlayerAnimFrames/PlayerMoveFrames/Dashing_Right_5",
+        "Images/PlayerAnimFrames/PlayerMoveFrames/Dashing_Right_6",
+        "Images/PlayerAnimFrames/PlayerMoveFrames/Dashing_Right_7"
+    ],
+
+    "dash_down" : [
+        "Images/PlayerAnimFrames/PlayerMoveFrames/Dashing_Backward_1",
+        "Images/PlayerAnimFrames/PlayerMoveFrames/Dashing_Backward_2",
+        "Images/PlayerAnimFrames/PlayerMoveFrames/Dashing_Backward_3",
+        "Images/PlayerAnimFrames/PlayerMoveFrames/Dashing_Backward_4",
+        "Images/PlayerAnimFrames/PlayerMoveFrames/Dashing_Backward_5",
+        "Images/PlayerAnimFrames/PlayerMoveFrames/Dashing_Backward_6",
+        "Images/PlayerAnimFrames/PlayerMoveFrames/Dashing_Backward_7"
+    ]
+}

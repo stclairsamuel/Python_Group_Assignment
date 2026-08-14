@@ -1,0 +1,53 @@
+{
+    "Rat_Boss_Walk" : [
+        "Images/BossAnimFrames/Rat_Boss_Walk1",
+        "Images/BossAnimFrames/Rat_Boss_Walk2",
+        "Images/BossAnimFrames/Rat_Boss_Walk3",
+        "Images/BossAnimFrames/Rat_Boss_Walk4",
+        "Images/BossAnimFrames/Rat_Boss_Walk5",
+        "Images/BossAnimFrames/Rat_Boss_Walk6",
+        "Images/BossAnimFrames/Rat_Boss_Walk7",
+        "Images/BossAnimFrames/Rat_Boss_Walk8"
+    ],
+
+    "Rat_Boss_Melee" : [
+        "Images/BossAnimFrames/Rat_Boss_Melee1",
+        "Images/BossAnimFrames/Rat_Boss_Melee2",
+        "Images/BossAnimFrames/Rat_Boss_Melee3",
+        "Images/BossAnimFrames/Rat_Boss_Melee4",
+        "Images/BossAnimFrames/Rat_Boss_Melee5",
+        "Images/BossAnimFrames/Rat_Boss_Melee6",
+        "Images/BossAnimFrames/Rat_Boss_Melee7",
+        "Images/BossAnimFrames/Rat_Boss_Melee8",
+        "Images/BossAnimFrames/Rat_Boss_Melee9",
+        "Images/BossAnimFrames/Rat_Boss_Melee10",
+        "Images/BossAnimFrames/Rat_Boss_Melee11",
+        "Images/BossAnimFrames/Rat_Boss_Melee12"
+    ],
+
+    "Rat_Boss_Aim" : [
+        "Images/BossAnimFrames/Rat_Boss_Lift1",
+        "Images/BossAnimFrames/Rat_Boss_Lift2",
+        "Images/BossAnimFrames/Rat_Boss_Lift3",
+        "Images/BossAnimFrames/Rat_Boss_Lift4"
+    ],
+
+    "Rat_Boss_Shoot" : [
+        "Images/BossAnimFrames/Rat_Boss_Shoot1",
+        "Images/BossAnimFrames/Rat_Boss_Shoot2",
+        "Images/BossAnimFrames/Rat_Boss_Shoot3"
+    ],
+
+    "Rat_Boss_Throw" : [
+        "Images/BossAnimFrames/Rat_Boss_Throw1",
+        "Images/BossAnimFrames/Rat_Boss_Throw2",
+        "Images/BossAnimFrames/Rat_Boss_Throw3",
+        "Images/BossAnimFrames/Rat_Boss_Throw4",
+        "Images/BossAnimFrames/Rat_Boss_Throw5",
+        "Images/BossAnimFrames/Rat_Boss_Throw6",
+        "Images/BossAnimFrames/Rat_Boss_Throw7",
+        "Images/BossAnimFrames/Rat_Boss_Throw8",
+        "Images/BossAnimFrames/Rat_Boss_Throw9",
+        "Images/BossAnimFrames/Rat_Boss_Throw10"
+    ]
+}

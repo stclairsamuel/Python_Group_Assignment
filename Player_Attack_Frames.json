@@ -1,0 +1,12 @@
+{
+"attack_one" : [
+    "Images/PlayerAnimFrames/PlayerAttackFrames/Cat_Player_Attack1",
+    "Images/PlayerAnimFrames/PlayerAttackFrames/Cat_Player_Attack2",
+    "Images/PlayerAnimFrames/PlayerAttackFrames/Cat_Player_Attack3",
+    "Images/PlayerAnimFrames/PlayerAttackFrames/Cat_Player_Attack4",
+    "Images/PlayerAnimFrames/PlayerAttackFrames/Cat_Player_Attack5",
+    "Images/PlayerAnimFrames/PlayerAttackFrames/Cat_Player_Attack6",
+    "Images/PlayerAnimFrames/PlayerAttackFrames/Cat_Player_Attack7",
+    "Images/PlayerAnimFrames/PlayerAttackFrames/Cat_Player_Attack8"
+]
+}

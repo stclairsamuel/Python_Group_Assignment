@@ -1,0 +1,4 @@
+{
+    "click" : ["Images/CursorFrames/cursor_click"],
+    "release" : ["Images/CursorFrames/cursor_release"]
+}
